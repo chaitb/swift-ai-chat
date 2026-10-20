@@ -1,0 +1,8 @@
+data: {"type":"start","messageMetadata":{"threadId":"bfd31aab-62a9-4852-a74a-57b5c0c1a73d","messageId":"64592794-3f58-4146-9456-ca2ff2b1ce06","model":"claude-sonnet-5.5","provider":"anthropic"},"messageId":"64592794-3f58-4146-9456-ca2ff2b1ce06"}
+
+data: {"type":"error","errorText":"Gateway provider error: boom"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"bfd31aab-62a9-4852-a74a-57b5c0c1a73d","messageId":"64592794-3f58-4146-9456-ca2ff2b1ce06","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: [DONE]
+

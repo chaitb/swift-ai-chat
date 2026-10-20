@@ -1,0 +1,82 @@
+{
+  "scenario": "tool-approval-continue",
+  "status": 200,
+  "headers": {
+    "access-control-allow-credentials": "true",
+    "access-control-expose-headers": "X-Thread-Id",
+    "cache-control": "no-cache",
+    "connection": "keep-alive",
+    "content-type": "text/event-stream",
+    "cross-origin-opener-policy": "same-origin",
+    "cross-origin-resource-policy": "same-origin",
+    "origin-agent-cluster": "?1",
+    "referrer-policy": "no-referrer",
+    "strict-transport-security": "max-age=15552000; includeSubDomains",
+    "vary": "Origin",
+    "x-accel-buffering": "no",
+    "x-content-type-options": "nosniff",
+    "x-dns-prefetch-control": "off",
+    "x-download-options": "noopen",
+    "x-frame-options": "SAMEORIGIN",
+    "x-permitted-cross-domain-policies": "none",
+    "x-request-id": "f292efbb-8caa-4f76-8199-46f192a7c0af",
+    "x-thread-id": "156ef57c-3468-46c2-9420-0024c1a57431",
+    "x-vercel-ai-ui-message-stream": "v1",
+    "x-xss-protection": "0"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/api/chat",
+    "query": "",
+    "body": {
+      "messages": [
+        {
+          "id": "76ed2042-c1b8-475e-8278-d3b7f538e378",
+          "role": "assistant",
+          "parts": [
+            {
+              "type": "step-start"
+            },
+            {
+              "type": "tool-loadTools",
+              "toolCallId": "call-1-0",
+              "state": "output-available",
+              "input": {
+                "namespace": "user",
+                "dataset": "foodLog"
+              },
+              "output": {
+                "namespace": "user",
+                "dataset": "foodLog",
+                "loadedTools": [
+                  "user.foodLog.listByDate",
+                  "user.foodLog.addItem",
+                  "user.foodLog.addNewItem",
+                  "user.foodLog.updateItem",
+                  "user.foodLog.deleteItem",
+                  "user.foodLog.displayMacroEstimation"
+                ]
+              }
+            },
+            {
+              "type": "step-start"
+            },
+            {
+              "type": "tool-user.foodLog.deleteItem",
+              "toolCallId": "call-2-0",
+              "state": "approval-responded",
+              "input": {
+                "log_item_id": "65a4d01f-3d74-4640-b10e-8a5a2c2101f3"
+              },
+              "approval": {
+                "id": "aitxt-63qrcK2hEEnaolNJRzoTAHrK",
+                "approved": true
+              }
+            }
+          ]
+        }
+      ],
+      "threadId": "156ef57c-3468-46c2-9420-0024c1a57431"
+    }
+  }
+}

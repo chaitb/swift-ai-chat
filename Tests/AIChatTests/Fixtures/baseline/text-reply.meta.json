@@ -1,0 +1,46 @@
+{
+  "scenario": "text-reply",
+  "status": 200,
+  "headers": {
+    "access-control-allow-credentials": "true",
+    "access-control-expose-headers": "X-Thread-Id",
+    "cache-control": "no-cache",
+    "connection": "keep-alive",
+    "content-type": "text/event-stream",
+    "cross-origin-opener-policy": "same-origin",
+    "cross-origin-resource-policy": "same-origin",
+    "origin-agent-cluster": "?1",
+    "referrer-policy": "no-referrer",
+    "strict-transport-security": "max-age=15552000; includeSubDomains",
+    "vary": "Origin",
+    "x-accel-buffering": "no",
+    "x-content-type-options": "nosniff",
+    "x-dns-prefetch-control": "off",
+    "x-download-options": "noopen",
+    "x-frame-options": "SAMEORIGIN",
+    "x-permitted-cross-domain-policies": "none",
+    "x-request-id": "5ea8ab8a-5b23-4100-9293-4eb080591579",
+    "x-thread-id": "5425b0e7-1254-4b7f-874e-5f6c0dc14fad",
+    "x-vercel-ai-ui-message-stream": "v1",
+    "x-xss-protection": "0"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/api/chat",
+    "query": "",
+    "body": {
+      "messages": [
+        {
+          "id": "a06f4484-e696-4b07-8425-b37990f3d23c",
+          "role": "user",
+          "parts": [
+            {
+              "type": "text",
+              "text": "How much sleep do I need?"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

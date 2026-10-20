@@ -1,0 +1,47 @@
+{
+  "scenario": "follow-up",
+  "status": 200,
+  "headers": {
+    "access-control-allow-credentials": "true",
+    "access-control-expose-headers": "X-Thread-Id",
+    "cache-control": "no-cache",
+    "connection": "keep-alive",
+    "content-type": "text/event-stream",
+    "cross-origin-opener-policy": "same-origin",
+    "cross-origin-resource-policy": "same-origin",
+    "origin-agent-cluster": "?1",
+    "referrer-policy": "no-referrer",
+    "strict-transport-security": "max-age=15552000; includeSubDomains",
+    "vary": "Origin",
+    "x-accel-buffering": "no",
+    "x-content-type-options": "nosniff",
+    "x-dns-prefetch-control": "off",
+    "x-download-options": "noopen",
+    "x-frame-options": "SAMEORIGIN",
+    "x-permitted-cross-domain-policies": "none",
+    "x-request-id": "02becba4-ac94-4cf1-a1b2-be48700a36ec",
+    "x-thread-id": "5425b0e7-1254-4b7f-874e-5f6c0dc14fad",
+    "x-vercel-ai-ui-message-stream": "v1",
+    "x-xss-protection": "0"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/api/chat",
+    "query": "",
+    "body": {
+      "messages": [
+        {
+          "id": "38f6c6a1-8e43-4fe4-959d-afca5d8e64f7",
+          "role": "user",
+          "parts": [
+            {
+              "type": "text",
+              "text": "Any tips for falling asleep faster?"
+            }
+          ]
+        }
+      ],
+      "threadId": "5425b0e7-1254-4b7f-874e-5f6c0dc14fad"
+    }
+  }
+}

@@ -1,0 +1,32 @@
+data: {"type":"start","messageMetadata":{"threadId":"b5680e41-587c-4532-beeb-01b25b6331f8","messageId":"a8011193-ce31-4484-b006-bdbcfd6bb139","model":"claude-sonnet-5.5","provider":"anthropic"},"messageId":"a8011193-ce31-4484-b006-bdbcfd6bb139"}
+
+data: {"type":"start-step"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"b5680e41-587c-4532-beeb-01b25b6331f8","messageId":"a8011193-ce31-4484-b006-bdbcfd6bb139","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"tool-input-start","toolCallId":"call-1-0","toolName":"user.survey.ask"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"b5680e41-587c-4532-beeb-01b25b6331f8","messageId":"a8011193-ce31-4484-b006-bdbcfd6bb139","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"tool-input-delta","toolCallId":"call-1-0","inputTextDelta":"{\"questions\":[{\"id\":\"goal\",\"kind\":\"single\",\"label\":\"Goal\",\"prompt\":\"What is your main goal right now?\",\"options\":[{\"id\":\"lose\",\"label\":\"Lose fat\"},{\"id\":\"gain\",\"label\":\"Build mus"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"b5680e41-587c-4532-beeb-01b25b6331f8","messageId":"a8011193-ce31-4484-b006-bdbcfd6bb139","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"tool-input-delta","toolCallId":"call-1-0","inputTextDelta":"cle\"},{\"id\":\"maintain\",\"label\":\"Maintain\"}]},{\"id\":\"days\",\"kind\":\"number\",\"label\":\"Training days\",\"prompt\":\"How many days a week can you train?\",\"min\":0,\"max\":7,\"unit\":\"days\"}]}"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"b5680e41-587c-4532-beeb-01b25b6331f8","messageId":"a8011193-ce31-4484-b006-bdbcfd6bb139","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"b5680e41-587c-4532-beeb-01b25b6331f8","messageId":"a8011193-ce31-4484-b006-bdbcfd6bb139","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"tool-input-available","toolCallId":"call-1-0","toolName":"user.survey.ask","input":{"questions":[{"id":"goal","kind":"single","label":"Goal","prompt":"What is your main goal right now?","options":[{"id":"lose","label":"Lose fat"},{"id":"gain","label":"Build muscle"},{"id":"maintain","label":"Maintain"}]},{"id":"days","kind":"number","label":"Training days","prompt":"How many days a week can you train?","min":0,"max":7,"unit":"days"}]}}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"b5680e41-587c-4532-beeb-01b25b6331f8","messageId":"a8011193-ce31-4484-b006-bdbcfd6bb139","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"finish-step"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"b5680e41-587c-4532-beeb-01b25b6331f8","messageId":"a8011193-ce31-4484-b006-bdbcfd6bb139","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"finish","finishReason":"tool-calls","messageMetadata":{"threadId":"b5680e41-587c-4532-beeb-01b25b6331f8","messageId":"a8011193-ce31-4484-b006-bdbcfd6bb139","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: [DONE]
+

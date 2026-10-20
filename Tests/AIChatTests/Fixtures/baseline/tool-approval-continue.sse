@@ -1,0 +1,62 @@
+data: {"type":"start","messageMetadata":{"threadId":"156ef57c-3468-46c2-9420-0024c1a57431","messageId":"ad7a6a8b-72d8-4e9b-8e76-9e4b9945c063","model":"claude-sonnet-5.5","provider":"anthropic"},"messageId":"76ed2042-c1b8-475e-8278-d3b7f538e378"}
+
+data: {"type":"tool-output-available","toolCallId":"call-2-0","output":{"deleted":true,"log_item_id":"65a4d01f-3d74-4640-b10e-8a5a2c2101f3"}}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"156ef57c-3468-46c2-9420-0024c1a57431","messageId":"ad7a6a8b-72d8-4e9b-8e76-9e4b9945c063","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"start-step"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"156ef57c-3468-46c2-9420-0024c1a57431","messageId":"ad7a6a8b-72d8-4e9b-8e76-9e4b9945c063","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"text-start","id":"text-3"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"156ef57c-3468-46c2-9420-0024c1a57431","messageId":"ad7a6a8b-72d8-4e9b-8e76-9e4b9945c063","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"text-delta","id":"text-3","delta":"Done."}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"156ef57c-3468-46c2-9420-0024c1a57431","messageId":"ad7a6a8b-72d8-4e9b-8e76-9e4b9945c063","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"text-delta","id":"text-3","delta":" I"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"156ef57c-3468-46c2-9420-0024c1a57431","messageId":"ad7a6a8b-72d8-4e9b-8e76-9e4b9945c063","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"text-delta","id":"text-3","delta":" removed"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"156ef57c-3468-46c2-9420-0024c1a57431","messageId":"ad7a6a8b-72d8-4e9b-8e76-9e4b9945c063","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"text-delta","id":"text-3","delta":" the"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"156ef57c-3468-46c2-9420-0024c1a57431","messageId":"ad7a6a8b-72d8-4e9b-8e76-9e4b9945c063","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"text-delta","id":"text-3","delta":" Greek"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"156ef57c-3468-46c2-9420-0024c1a57431","messageId":"ad7a6a8b-72d8-4e9b-8e76-9e4b9945c063","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"text-delta","id":"text-3","delta":" yogurt"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"156ef57c-3468-46c2-9420-0024c1a57431","messageId":"ad7a6a8b-72d8-4e9b-8e76-9e4b9945c063","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"text-delta","id":"text-3","delta":" from"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"156ef57c-3468-46c2-9420-0024c1a57431","messageId":"ad7a6a8b-72d8-4e9b-8e76-9e4b9945c063","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"text-delta","id":"text-3","delta":" today's"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"156ef57c-3468-46c2-9420-0024c1a57431","messageId":"ad7a6a8b-72d8-4e9b-8e76-9e4b9945c063","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"text-delta","id":"text-3","delta":" log."}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"156ef57c-3468-46c2-9420-0024c1a57431","messageId":"ad7a6a8b-72d8-4e9b-8e76-9e4b9945c063","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"text-end","id":"text-3"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"156ef57c-3468-46c2-9420-0024c1a57431","messageId":"ad7a6a8b-72d8-4e9b-8e76-9e4b9945c063","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"finish-step"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"156ef57c-3468-46c2-9420-0024c1a57431","messageId":"ad7a6a8b-72d8-4e9b-8e76-9e4b9945c063","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"finish","finishReason":"stop","messageMetadata":{"threadId":"156ef57c-3468-46c2-9420-0024c1a57431","messageId":"ad7a6a8b-72d8-4e9b-8e76-9e4b9945c063","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: [DONE]
+

@@ -1,0 +1,30 @@
+{
+  "scenario": "error-invalid-input",
+  "status": 400,
+  "headers": {
+    "access-control-allow-credentials": "true",
+    "access-control-expose-headers": "X-Thread-Id",
+    "content-type": "application/json",
+    "cross-origin-opener-policy": "same-origin",
+    "cross-origin-resource-policy": "same-origin",
+    "origin-agent-cluster": "?1",
+    "referrer-policy": "no-referrer",
+    "strict-transport-security": "max-age=15552000; includeSubDomains",
+    "vary": "Origin",
+    "x-content-type-options": "nosniff",
+    "x-dns-prefetch-control": "off",
+    "x-download-options": "noopen",
+    "x-frame-options": "SAMEORIGIN",
+    "x-permitted-cross-domain-policies": "none",
+    "x-request-id": "2c805ee8-68ae-4297-9260-3e02331213ae",
+    "x-xss-protection": "0"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/api/chat",
+    "query": "",
+    "body": {
+      "messages": "not a list"
+    }
+  }
+}

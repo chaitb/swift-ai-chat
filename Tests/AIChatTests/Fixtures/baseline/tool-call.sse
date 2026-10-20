@@ -1,0 +1,130 @@
+data: {"type":"start","messageMetadata":{"threadId":"927545cf-7a14-42b9-9f98-0f32435ecca6","messageId":"608d9ded-89cc-4051-8de7-b6f7cc2fa7d2","model":"claude-sonnet-5.5","provider":"anthropic"},"messageId":"608d9ded-89cc-4051-8de7-b6f7cc2fa7d2"}
+
+data: {"type":"start-step"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"927545cf-7a14-42b9-9f98-0f32435ecca6","messageId":"608d9ded-89cc-4051-8de7-b6f7cc2fa7d2","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"tool-input-start","toolCallId":"call-1-0","toolName":"loadTools"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"927545cf-7a14-42b9-9f98-0f32435ecca6","messageId":"608d9ded-89cc-4051-8de7-b6f7cc2fa7d2","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"tool-input-delta","toolCallId":"call-1-0","inputTextDelta":"{\"namespace\":\"user\","}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"927545cf-7a14-42b9-9f98-0f32435ecca6","messageId":"608d9ded-89cc-4051-8de7-b6f7cc2fa7d2","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"tool-input-delta","toolCallId":"call-1-0","inputTextDelta":"\"dataset\":\"foodLog\"}"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"927545cf-7a14-42b9-9f98-0f32435ecca6","messageId":"608d9ded-89cc-4051-8de7-b6f7cc2fa7d2","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"927545cf-7a14-42b9-9f98-0f32435ecca6","messageId":"608d9ded-89cc-4051-8de7-b6f7cc2fa7d2","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"tool-input-available","toolCallId":"call-1-0","toolName":"loadTools","input":{"namespace":"user","dataset":"foodLog"}}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"927545cf-7a14-42b9-9f98-0f32435ecca6","messageId":"608d9ded-89cc-4051-8de7-b6f7cc2fa7d2","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"tool-output-available","toolCallId":"call-1-0","output":{"namespace":"user","dataset":"foodLog","loadedTools":["user.foodLog.listByDate","user.foodLog.addItem","user.foodLog.addNewItem","user.foodLog.updateItem","user.foodLog.deleteItem","user.foodLog.displayMacroEstimation"]}}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"927545cf-7a14-42b9-9f98-0f32435ecca6","messageId":"608d9ded-89cc-4051-8de7-b6f7cc2fa7d2","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"finish-step"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"927545cf-7a14-42b9-9f98-0f32435ecca6","messageId":"608d9ded-89cc-4051-8de7-b6f7cc2fa7d2","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"start-step"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"927545cf-7a14-42b9-9f98-0f32435ecca6","messageId":"608d9ded-89cc-4051-8de7-b6f7cc2fa7d2","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"tool-input-start","toolCallId":"call-2-0","toolName":"user.foodLog.listByDate"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"927545cf-7a14-42b9-9f98-0f32435ecca6","messageId":"608d9ded-89cc-4051-8de7-b6f7cc2fa7d2","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"tool-input-delta","toolCallId":"call-2-0","inputTextDelta":"{"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"927545cf-7a14-42b9-9f98-0f32435ecca6","messageId":"608d9ded-89cc-4051-8de7-b6f7cc2fa7d2","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"tool-input-delta","toolCallId":"call-2-0","inputTextDelta":"}"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"927545cf-7a14-42b9-9f98-0f32435ecca6","messageId":"608d9ded-89cc-4051-8de7-b6f7cc2fa7d2","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"927545cf-7a14-42b9-9f98-0f32435ecca6","messageId":"608d9ded-89cc-4051-8de7-b6f7cc2fa7d2","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"tool-input-available","toolCallId":"call-2-0","toolName":"user.foodLog.listByDate","input":{}}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"927545cf-7a14-42b9-9f98-0f32435ecca6","messageId":"608d9ded-89cc-4051-8de7-b6f7cc2fa7d2","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"tool-output-available","toolCallId":"call-2-0","output":{"date":"2026-10-20","entries":[],"totals":{"calories":0,"protein_g":0,"carbs_g":0,"fat_g":0},"_preview":{"entity":"foodEntry","status":"ok","ids":[],"previews":[]}}}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"927545cf-7a14-42b9-9f98-0f32435ecca6","messageId":"608d9ded-89cc-4051-8de7-b6f7cc2fa7d2","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"finish-step"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"927545cf-7a14-42b9-9f98-0f32435ecca6","messageId":"608d9ded-89cc-4051-8de7-b6f7cc2fa7d2","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"start-step"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"927545cf-7a14-42b9-9f98-0f32435ecca6","messageId":"608d9ded-89cc-4051-8de7-b6f7cc2fa7d2","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"text-start","id":"text-3"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"927545cf-7a14-42b9-9f98-0f32435ecca6","messageId":"608d9ded-89cc-4051-8de7-b6f7cc2fa7d2","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"text-delta","id":"text-3","delta":"Nothing"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"927545cf-7a14-42b9-9f98-0f32435ecca6","messageId":"608d9ded-89cc-4051-8de7-b6f7cc2fa7d2","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"text-delta","id":"text-3","delta":" is"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"927545cf-7a14-42b9-9f98-0f32435ecca6","messageId":"608d9ded-89cc-4051-8de7-b6f7cc2fa7d2","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"text-delta","id":"text-3","delta":" logged"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"927545cf-7a14-42b9-9f98-0f32435ecca6","messageId":"608d9ded-89cc-4051-8de7-b6f7cc2fa7d2","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"text-delta","id":"text-3","delta":" for"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"927545cf-7a14-42b9-9f98-0f32435ecca6","messageId":"608d9ded-89cc-4051-8de7-b6f7cc2fa7d2","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"text-delta","id":"text-3","delta":" today"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"927545cf-7a14-42b9-9f98-0f32435ecca6","messageId":"608d9ded-89cc-4051-8de7-b6f7cc2fa7d2","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"text-delta","id":"text-3","delta":" yet."}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"927545cf-7a14-42b9-9f98-0f32435ecca6","messageId":"608d9ded-89cc-4051-8de7-b6f7cc2fa7d2","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"text-delta","id":"text-3","delta":" Want"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"927545cf-7a14-42b9-9f98-0f32435ecca6","messageId":"608d9ded-89cc-4051-8de7-b6f7cc2fa7d2","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"text-delta","id":"text-3","delta":" me"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"927545cf-7a14-42b9-9f98-0f32435ecca6","messageId":"608d9ded-89cc-4051-8de7-b6f7cc2fa7d2","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"text-delta","id":"text-3","delta":" to"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"927545cf-7a14-42b9-9f98-0f32435ecca6","messageId":"608d9ded-89cc-4051-8de7-b6f7cc2fa7d2","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"text-delta","id":"text-3","delta":" add"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"927545cf-7a14-42b9-9f98-0f32435ecca6","messageId":"608d9ded-89cc-4051-8de7-b6f7cc2fa7d2","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"text-delta","id":"text-3","delta":" your"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"927545cf-7a14-42b9-9f98-0f32435ecca6","messageId":"608d9ded-89cc-4051-8de7-b6f7cc2fa7d2","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"text-delta","id":"text-3","delta":" breakfast?"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"927545cf-7a14-42b9-9f98-0f32435ecca6","messageId":"608d9ded-89cc-4051-8de7-b6f7cc2fa7d2","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"text-end","id":"text-3"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"927545cf-7a14-42b9-9f98-0f32435ecca6","messageId":"608d9ded-89cc-4051-8de7-b6f7cc2fa7d2","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"finish-step"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"927545cf-7a14-42b9-9f98-0f32435ecca6","messageId":"608d9ded-89cc-4051-8de7-b6f7cc2fa7d2","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"finish","finishReason":"stop","messageMetadata":{"threadId":"927545cf-7a14-42b9-9f98-0f32435ecca6","messageId":"608d9ded-89cc-4051-8de7-b6f7cc2fa7d2","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: [DONE]
+

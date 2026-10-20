@@ -1,0 +1,62 @@
+data: {"type":"start","messageMetadata":{"threadId":"2531b0a5-cebf-4bf1-87da-941caf53f7f7","messageId":"1fb0091b-2648-4d39-ae1c-558f07edb477","model":"claude-sonnet-5.5","provider":"anthropic"},"messageId":"1fb0091b-2648-4d39-ae1c-558f07edb477"}
+
+data: {"type":"start-step"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"2531b0a5-cebf-4bf1-87da-941caf53f7f7","messageId":"1fb0091b-2648-4d39-ae1c-558f07edb477","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"text-start","id":"text-1"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"2531b0a5-cebf-4bf1-87da-941caf53f7f7","messageId":"1fb0091b-2648-4d39-ae1c-558f07edb477","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"text-delta","id":"text-1","delta":"Welcome"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"2531b0a5-cebf-4bf1-87da-941caf53f7f7","messageId":"1fb0091b-2648-4d39-ae1c-558f07edb477","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"text-delta","id":"text-1","delta":" to"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"2531b0a5-cebf-4bf1-87da-941caf53f7f7","messageId":"1fb0091b-2648-4d39-ae1c-558f07edb477","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"text-delta","id":"text-1","delta":" Baseline!"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"2531b0a5-cebf-4bf1-87da-941caf53f7f7","messageId":"1fb0091b-2648-4d39-ae1c-558f07edb477","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"text-delta","id":"text-1","delta":" Let's"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"2531b0a5-cebf-4bf1-87da-941caf53f7f7","messageId":"1fb0091b-2648-4d39-ae1c-558f07edb477","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"text-delta","id":"text-1","delta":" set"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"2531b0a5-cebf-4bf1-87da-941caf53f7f7","messageId":"1fb0091b-2648-4d39-ae1c-558f07edb477","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"text-delta","id":"text-1","delta":" up"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"2531b0a5-cebf-4bf1-87da-941caf53f7f7","messageId":"1fb0091b-2648-4d39-ae1c-558f07edb477","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"text-delta","id":"text-1","delta":" your"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"2531b0a5-cebf-4bf1-87da-941caf53f7f7","messageId":"1fb0091b-2648-4d39-ae1c-558f07edb477","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"text-delta","id":"text-1","delta":" starting"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"2531b0a5-cebf-4bf1-87da-941caf53f7f7","messageId":"1fb0091b-2648-4d39-ae1c-558f07edb477","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"text-delta","id":"text-1","delta":" targets"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"2531b0a5-cebf-4bf1-87da-941caf53f7f7","messageId":"1fb0091b-2648-4d39-ae1c-558f07edb477","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"text-delta","id":"text-1","delta":" together."}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"2531b0a5-cebf-4bf1-87da-941caf53f7f7","messageId":"1fb0091b-2648-4d39-ae1c-558f07edb477","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"text-end","id":"text-1"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"2531b0a5-cebf-4bf1-87da-941caf53f7f7","messageId":"1fb0091b-2648-4d39-ae1c-558f07edb477","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"finish-step"}
+
+data: {"type":"message-metadata","messageMetadata":{"threadId":"2531b0a5-cebf-4bf1-87da-941caf53f7f7","messageId":"1fb0091b-2648-4d39-ae1c-558f07edb477","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: {"type":"finish","finishReason":"stop","messageMetadata":{"threadId":"2531b0a5-cebf-4bf1-87da-941caf53f7f7","messageId":"1fb0091b-2648-4d39-ae1c-558f07edb477","model":"claude-sonnet-5.5","provider":"anthropic"}}
+
+data: [DONE]
+

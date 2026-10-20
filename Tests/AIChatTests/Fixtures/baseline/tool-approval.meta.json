@@ -1,0 +1,46 @@
+{
+  "scenario": "tool-approval",
+  "status": 200,
+  "headers": {
+    "access-control-allow-credentials": "true",
+    "access-control-expose-headers": "X-Thread-Id",
+    "cache-control": "no-cache",
+    "connection": "keep-alive",
+    "content-type": "text/event-stream",
+    "cross-origin-opener-policy": "same-origin",
+    "cross-origin-resource-policy": "same-origin",
+    "origin-agent-cluster": "?1",
+    "referrer-policy": "no-referrer",
+    "strict-transport-security": "max-age=15552000; includeSubDomains",
+    "vary": "Origin",
+    "x-accel-buffering": "no",
+    "x-content-type-options": "nosniff",
+    "x-dns-prefetch-control": "off",
+    "x-download-options": "noopen",
+    "x-frame-options": "SAMEORIGIN",
+    "x-permitted-cross-domain-policies": "none",
+    "x-request-id": "f64148b9-273b-43e1-8eee-53653aaad12e",
+    "x-thread-id": "156ef57c-3468-46c2-9420-0024c1a57431",
+    "x-vercel-ai-ui-message-stream": "v1",
+    "x-xss-protection": "0"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/api/chat",
+    "query": "",
+    "body": {
+      "messages": [
+        {
+          "id": "ab8abd93-be12-4fe6-88e7-6d7d2630f3c7",
+          "role": "user",
+          "parts": [
+            {
+              "type": "text",
+              "text": "Delete the Greek yogurt I just logged"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

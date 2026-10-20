@@ -1,0 +1,41 @@
+{
+  "scenario": "consent-required",
+  "status": 403,
+  "headers": {
+    "access-control-allow-credentials": "true",
+    "access-control-expose-headers": "X-Thread-Id",
+    "content-type": "application/json",
+    "cross-origin-opener-policy": "same-origin",
+    "cross-origin-resource-policy": "same-origin",
+    "origin-agent-cluster": "?1",
+    "referrer-policy": "no-referrer",
+    "strict-transport-security": "max-age=15552000; includeSubDomains",
+    "vary": "Origin",
+    "x-content-type-options": "nosniff",
+    "x-dns-prefetch-control": "off",
+    "x-download-options": "noopen",
+    "x-frame-options": "SAMEORIGIN",
+    "x-permitted-cross-domain-policies": "none",
+    "x-request-id": "544a1888-ddb8-4f6f-b546-b044df1ebb37",
+    "x-xss-protection": "0"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/api/chat",
+    "query": "",
+    "body": {
+      "messages": [
+        {
+          "id": "ca2f68ba-9a51-4548-bc18-10db7c0bad00",
+          "role": "user",
+          "parts": [
+            {
+              "type": "text",
+              "text": "How much sleep do I need?"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

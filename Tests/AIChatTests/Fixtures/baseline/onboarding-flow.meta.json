@@ -1,0 +1,35 @@
+{
+  "scenario": "onboarding-flow",
+  "status": 200,
+  "headers": {
+    "access-control-allow-credentials": "true",
+    "access-control-expose-headers": "X-Thread-Id",
+    "cache-control": "no-cache",
+    "connection": "keep-alive",
+    "content-type": "text/event-stream",
+    "cross-origin-opener-policy": "same-origin",
+    "cross-origin-resource-policy": "same-origin",
+    "origin-agent-cluster": "?1",
+    "referrer-policy": "no-referrer",
+    "strict-transport-security": "max-age=15552000; includeSubDomains",
+    "vary": "Origin",
+    "x-accel-buffering": "no",
+    "x-content-type-options": "nosniff",
+    "x-dns-prefetch-control": "off",
+    "x-download-options": "noopen",
+    "x-frame-options": "SAMEORIGIN",
+    "x-permitted-cross-domain-policies": "none",
+    "x-request-id": "95d32788-11bb-4c87-b21b-995eeca3721d",
+    "x-thread-id": "2531b0a5-cebf-4bf1-87da-941caf53f7f7",
+    "x-vercel-ai-ui-message-stream": "v1",
+    "x-xss-protection": "0"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/api/chat",
+    "query": "flow=onboarding",
+    "body": {
+      "messages": []
+    }
+  }
+}

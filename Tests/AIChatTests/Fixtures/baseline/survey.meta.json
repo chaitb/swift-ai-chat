@@ -1,0 +1,46 @@
+{
+  "scenario": "survey",
+  "status": 200,
+  "headers": {
+    "access-control-allow-credentials": "true",
+    "access-control-expose-headers": "X-Thread-Id",
+    "cache-control": "no-cache",
+    "connection": "keep-alive",
+    "content-type": "text/event-stream",
+    "cross-origin-opener-policy": "same-origin",
+    "cross-origin-resource-policy": "same-origin",
+    "origin-agent-cluster": "?1",
+    "referrer-policy": "no-referrer",
+    "strict-transport-security": "max-age=15552000; includeSubDomains",
+    "vary": "Origin",
+    "x-accel-buffering": "no",
+    "x-content-type-options": "nosniff",
+    "x-dns-prefetch-control": "off",
+    "x-download-options": "noopen",
+    "x-frame-options": "SAMEORIGIN",
+    "x-permitted-cross-domain-policies": "none",
+    "x-request-id": "e756ccbd-f102-45d6-835c-e03dbb1f9f80",
+    "x-thread-id": "b5680e41-587c-4532-beeb-01b25b6331f8",
+    "x-vercel-ai-ui-message-stream": "v1",
+    "x-xss-protection": "0"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/api/chat",
+    "query": "",
+    "body": {
+      "messages": [
+        {
+          "id": "ed06efef-bab0-4563-b75d-821a68507b90",
+          "role": "user",
+          "parts": [
+            {
+              "type": "text",
+              "text": "Ask me a few questions so you can set my goals"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
