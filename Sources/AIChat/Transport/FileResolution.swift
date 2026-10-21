@@ -25,7 +25,7 @@ public typealias FileResolver = @Sendable (FilePart) async throws -> ResolvedFil
 public enum FileResolution {
     /// `data:` URLs become inline bytes and `http(s)` URLs are passed to the provider.
     /// Anything else, such as a path your own backend serves, fails with a clear error.
-    @Sendable public static func inline(_ file: FilePart) async throws -> ResolvedFile? {
+    @Sendable public static func inline(_ file: FilePart) throws -> ResolvedFile? {
         if let dataURL = DataURL(file.url) {
             return .data(dataURL.data, mediaType: file.mediaType.isEmpty ? dataURL.mediaType : file.mediaType)
         }

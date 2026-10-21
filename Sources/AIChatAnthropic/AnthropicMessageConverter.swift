@@ -62,21 +62,26 @@ enum AnthropicMessageConverter {
     static func userContent(_ message: UIMessage, configuration: AnthropicConfiguration) async throws -> [JSONValue] {
         var content: [JSONValue] = []
         for part in message.parts {
-            switch part {
-            case .text(let text):
-                if !text.text.isEmpty { content.append(["type": "text", "text": .string(text.text)]) }
-            case .file(let file):
-                guard let resolved = try await configuration.fileResolver(file) else { continue }
-                content.append(try fileBlock(resolved, filename: file.filename))
-            case .data(let data):
-                if let text = configuration.dataPartConverter?(data), !text.isEmpty {
-                    content.append(["type": "text", "text": .string(text)])
-                }
-            default:
-                continue
+            if let block = try await userBlock(part, configuration: configuration) {
+                content.append(block)
             }
         }
         return content
+    }
+
+    private static func userBlock(_ part: UIMessagePart, configuration: AnthropicConfiguration) async throws -> JSONValue? {
+        switch part {
+        case .text(let text):
+            return text.text.isEmpty ? nil : ["type": "text", "text": .string(text.text)]
+        case .file(let file):
+            guard let resolved = try await configuration.fileResolver(file) else { return nil }
+            return try fileBlock(resolved, filename: file.filename)
+        case .data(let data):
+            guard let text = configuration.dataPartConverter?(data), !text.isEmpty else { return nil }
+            return ["type": "text", "text": .string(text)]
+        default:
+            return nil
+        }
     }
 
     static func fileBlock(_ file: ResolvedFile, filename: String?) throws -> JSONValue {

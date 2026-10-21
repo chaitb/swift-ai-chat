@@ -228,7 +228,10 @@ struct AnthropicStreamMapper: Sendable {
             if type != "tool_use" { metadata["type"] = .string(type) }
             if let serverName = block.raw["server_name"] { metadata["serverName"] = serverName }
             let providerMetadata: JSONValue? = metadata.isEmpty ? nil : ["anthropic": .object(metadata)]
-            let initial = block.raw["input"].flatMap { $0 == [:] ? nil : $0 }
+            let initial: JSONValue? = switch block.raw["input"] {
+            case nil, .null?, .object([:])?: nil
+            case let value?: value
+            }
             let text = block.json.trimmingCharacters(in: .whitespacesAndNewlines)
             if text.isEmpty {
                 blocks[index]?.raw["input"] = initial ?? [:]
