@@ -54,8 +54,8 @@ struct ChatView: View {
 `Chat` is `@MainActor` and `@Observable`. `messages`, `status` and `error` drive your UI. Every message is a list of typed parts, so you can render text, reasoning, tool calls, sources, files and data parts each in their own view:
 
 ```swift
-ForEach(message.parts) { part in
-    switch part {
+ForEach(message.parts.indices, id: \.self) { index in
+    switch message.parts[index] {
     case .text(let text): Markdown(text.text)
     case .reasoning(let reasoning): ThinkingView(reasoning)
     case .tool(let tool): ToolCallRow(tool)
