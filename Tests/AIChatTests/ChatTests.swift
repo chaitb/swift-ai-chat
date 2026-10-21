@@ -189,7 +189,8 @@ struct ChatTests {
         await approving.value
         #expect(!chat.isBusy)
         #expect(transport.requests.count == 1)
-        #expect(chat.messages.last?.toolParts.first?.state == .approvalResponded)
+        #expect(chat.messages.last?.toolParts.first?.state == .outputError)
+        #expect(chat.messages.last?.toolParts.first?.isRunning == false)
     }
 
     @Test func toolErrorsBecomeOutputErrors() async throws {

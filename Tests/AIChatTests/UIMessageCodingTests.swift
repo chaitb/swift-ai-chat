@@ -63,14 +63,16 @@ struct UIMessageCodingTests {
     @Test func roundTripsThroughCodable() throws {
         let message = try UIMessage(jsonData: Data(Self.aiSDKMessage.utf8))
         let data = try JSONEncoder().encode([message])
-        #expect(try JSONDecoder().decode([UIMessage].self, from: data) == [message])
+        let decoded = try JSONDecoder().decode([UIMessage].self, from: data)
+        #expect(decoded == [message])
     }
 
     @Test func distinguishesMissingAndNullToolOutput() throws {
         let json = #"{"id":"m","role":"assistant","parts":[{"type":"tool-a","toolCallId":"c","state":"output-available","input":{},"output":null}]}"#
         let message = try UIMessage(jsonData: Data(json.utf8))
         #expect(message.toolParts.first?.output == .null)
-        #expect(message.jsonValue == (try JSONValue(parsing: json)))
+        let expected = try JSONValue(parsing: json)
+        #expect(message.jsonValue == expected)
     }
 
     @Test func staticToolPartsDoNotWriteToolName() {
@@ -83,7 +85,8 @@ struct UIMessageCodingTests {
         let json = #"{"type":"tool-user.foodLog.list-by-date","toolCallId":"c","state":"input-streaming"}"#
         let part = try UIMessagePart(jsonData: Data(json.utf8))
         #expect(part.toolPart?.toolName == "user.foodLog.list-by-date")
-        #expect(part.jsonValue == (try JSONValue(parsing: json)))
+        let expected = try JSONValue(parsing: json)
+        #expect(part.jsonValue == expected)
     }
 
     @Test func rejectsMessagesWithoutParts() {

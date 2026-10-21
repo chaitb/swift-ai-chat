@@ -172,7 +172,13 @@ public final class Chat: Identifiable {
     /// Stops the running response and any client tools it started. Streamed parts are kept.
     public func stop() {
         activeTask?.cancel()
-        for task in toolTasks.values { task.cancel() }
+        for (callID, task) in toolTasks {
+            task.cancel()
+            updateToolPart(callID: callID) { part in
+                part.state = .outputError
+                part.errorText = "The tool was stopped."
+            }
+        }
         toolTasks = [:]
     }
 

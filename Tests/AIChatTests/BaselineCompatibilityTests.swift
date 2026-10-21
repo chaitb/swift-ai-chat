@@ -178,7 +178,8 @@ struct BaselineCompatibilityTests {
 
         let request = try #require(http.requests.first)
         #expect(request.url?.query == "flow=onboarding")
-        #expect(http.requestBodies.first == (try recordedRequestBody("onboarding-flow")))
+        let recorded = try recordedRequestBody("onboarding-flow")
+        #expect(http.requestBodies.first == recorded)
         #expect(chat.messages.count == 1)
         #expect(chat.messages[0].role == .assistant)
         #expect(session.threadID == "2531b0a5-cebf-4bf1-87da-941caf53f7f7")
