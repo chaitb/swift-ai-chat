@@ -95,11 +95,11 @@ public struct OpenAIChatTransport: ChatTransport {
             if let effort = reasoning.effort { object["effort"] = .string(effort.rawValue) }
             if let summary = reasoning.summary { object["summary"] = .string(summary.rawValue) }
             body["reasoning"] = .object(object)
-            if !configuration.store {
-                var include = body["include"]?.arrayValue ?? []
-                if !include.contains("reasoning.encrypted_content") { include.append("reasoning.encrypted_content") }
-                body["include"] = .array(include)
-            }
+        }
+        if !configuration.store, configuration.includesEncryptedReasoning ?? (configuration.reasoning != nil) {
+            var include = body["include"]?.arrayValue ?? []
+            if !include.contains("reasoning.encrypted_content") { include.append("reasoning.encrypted_content") }
+            body["include"] = .array(include)
         }
         if let verbosity = configuration.verbosity {
             var text = body["text"]?.objectValue ?? [:]
@@ -164,9 +164,11 @@ public struct OpenAIChatTransport: ChatTransport {
         var body = configuration.extraBody
         body["model"] = .string(model)
         body["stream"] = true
-        body["stream_options"] = ["include_usage": true]
+        if configuration.includesStreamUsage { body["stream_options"] = ["include_usage": true] }
         body["messages"] = .array(messages)
-        if let maxOutputTokens = configuration.maxOutputTokens { body["max_completion_tokens"] = .number(Double(maxOutputTokens)) }
+        if let maxOutputTokens = configuration.maxOutputTokens {
+            body[configuration.usesLegacyMaxTokens ? "max_tokens" : "max_completion_tokens"] = .number(Double(maxOutputTokens))
+        }
         if !request.tools.isEmpty {
             body["tools"] = .array(request.tools.map(chatCompletionsTool))
             if let toolChoice = configuration.toolChoice { body["tool_choice"] = toolChoice }

@@ -61,6 +61,17 @@ public struct OpenAIConfiguration: Sendable {
     public var systemMessageRole: SystemMessageRole
     /// `nil` leaves reasoning to the model's default.
     public var reasoning: Reasoning?
+    /// Asks for `reasoning.encrypted_content` so reasoning goes back to the model
+    /// on the next turn when `store` is off. `nil` asks only when ``reasoning`` is
+    /// set, since some non-reasoning models reject the field. Set it to `true` for
+    /// reasoning models used with their default settings. Responses API only.
+    public var includesEncryptedReasoning: Bool?
+    /// Sends `stream_options.include_usage`. Chat Completions only. Turn it off for
+    /// compatible servers that reject the field.
+    public var includesStreamUsage: Bool
+    /// Sends the output limit as `max_tokens` instead of `max_completion_tokens`.
+    /// Chat Completions only, for compatible servers that only know the older name.
+    public var usesLegacyMaxTokens: Bool
     /// The `text.verbosity` (Responses) or `verbosity` (Chat Completions) parameter: `low`, `medium` or `high`.
     public var verbosity: String?
     /// Whether OpenAI keeps the response. Off by default: the transport sends the whole
@@ -96,6 +107,9 @@ public struct OpenAIConfiguration: Sendable {
         system: String? = nil,
         systemMessageRole: SystemMessageRole = .system,
         reasoning: Reasoning? = nil,
+        includesEncryptedReasoning: Bool? = nil,
+        includesStreamUsage: Bool = true,
+        usesLegacyMaxTokens: Bool = false,
         verbosity: String? = nil,
         store: Bool = false,
         builtInTools: [JSONValue] = [],
@@ -119,6 +133,9 @@ public struct OpenAIConfiguration: Sendable {
         self.system = system
         self.systemMessageRole = systemMessageRole
         self.reasoning = reasoning
+        self.includesEncryptedReasoning = includesEncryptedReasoning
+        self.includesStreamUsage = includesStreamUsage
+        self.usesLegacyMaxTokens = usesLegacyMaxTokens
         self.verbosity = verbosity
         self.store = store
         self.builtInTools = builtInTools

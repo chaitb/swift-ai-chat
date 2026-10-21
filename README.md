@@ -78,7 +78,9 @@ configuration.reasoning = .init(effort: .medium, summary: .auto)
 let gpt = Chat(transport: OpenAIChatTransport(configuration: configuration))
 ```
 
-Direct transports send the whole conversation each turn. Anthropic thinking keeps its signature and OpenAI reasoning goes back as encrypted content, so the model keeps its chain of thought across tool calls without any server-side state.
+Direct transports send the whole conversation each turn. Anthropic thinking keeps its signature and OpenAI reasoning goes back as encrypted content, so the model keeps its chain of thought across tool calls without any server-side state. For OpenAI, that happens when `reasoning` is set or `includesEncryptedReasoning` is `true`.
+
+Current Claude models leave thinking text out of the stream by default, so reasoning parts arrive empty. Set `thinking = .adaptive(display: .summarized)` to stream a readable summary.
 
 Shipping a provider key inside an app exposes it to anyone who has the app. Use direct transports for tools, prototypes and apps where users bring their own key, and put a backend in front for everything else.
 
@@ -121,6 +123,7 @@ Picker("Model", selection: $picker.selectedModelID) {
     ForEach(picker.models) { Text($0.displayName).tag(Optional($0.id)) }
 }
 .task { await picker.load() }
+.onAppear { chat.modelID = picker.selectedModelID }
 .onChange(of: picker.selectedModelID) { chat.modelID = $1 }
 ```
 

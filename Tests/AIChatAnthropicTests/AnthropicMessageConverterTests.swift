@@ -89,14 +89,35 @@ struct AnthropicMessageConverterTests {
                 input: ["query": "x"],
                 output: [["type": "web_search_result", "url": "https://a.com", "title": "A", "encrypted_content": "e"]],
                 providerExecuted: true,
+                callProviderMetadata: ["anthropic": ["type": "server_tool_use"]],
                 resultProviderMetadata: ["anthropic": ["type": "web_search_tool_result"]]
+            )),
+            .tool(ToolPart(
+                toolName: "web_search",
+                toolCallId: "srv2",
+                state: .outputError,
+                input: ["query": "y"],
+                errorText: "max_uses_exceeded",
+                providerExecuted: true,
+                callProviderMetadata: ["anthropic": ["type": "server_tool_use"]],
+                resultProviderMetadata: ["anthropic": ["type": "web_search_tool_result", "errorContent": ["type": "web_search_tool_result_error", "error_code": "max_uses_exceeded"]]]
+            )),
+            .tool(ToolPart(
+                toolName: "web_search",
+                toolCallId: "ws_openai",
+                state: .outputAvailable,
+                input: [:],
+                output: ["status": "completed"],
+                providerExecuted: true,
+                callProviderMetadata: ["openai": ["itemId": "ws_openai"]]
             )),
             .text("Found it."),
         ])
         let body = try await sentBody([.user("Search"), assistant, .user("More")])
         let messages = try #require(body["messages"]?.arrayValue)
         #expect(messages.count == 3)
-        #expect(messages[1]["content"]?.arrayValue?.map { $0["type"] } == ["server_tool_use", "web_search_tool_result", "text"])
+        #expect(messages[1]["content"]?.arrayValue?.map { $0["type"] } == ["server_tool_use", "web_search_tool_result", "server_tool_use", "web_search_tool_result", "text"])
+        #expect(messages[1]["content"]?[3]?["content"] == ["type": "web_search_tool_result_error", "error_code": "max_uses_exceeded"])
     }
 
     @Test func rejectsUnsupportedAttachments() async throws {

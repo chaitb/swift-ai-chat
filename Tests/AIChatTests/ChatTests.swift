@@ -155,6 +155,43 @@ struct ChatTests {
         #expect(chat.messages.last?.text == "It's 21°C.")
     }
 
+    @Test func anEmptyReplyAfterAToolResultEndsTheLoop() async throws {
+        let empty: [UIMessageChunk] = [.start(messageId: "a1"), .startStep, .finishStep, .finish()]
+        let transport = MockChatTransport(responses: [
+            .chunks(.toolCallResponse(toolName: "ping", input: [:], messageId: "a1")),
+            .chunks(empty),
+            .chunks(empty),
+            .chunks(empty),
+        ])
+        let chat = Chat(transport: transport, configuration: ChatConfiguration(tools: [ChatTool(name: "ping") { _ in "pong" }]))
+        await chat.sendMessage("Ping")
+        try await waitUntil { transport.requests.count >= 2 && chat.status == .ready && !chat.isBusy }
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(transport.requests.count == 2)
+        #expect(chat.messages.last?.parts.map(\.type) == ["step-start", "tool-ping", "step-start"])
+    }
+
+    @Test func stopCancelsAnApprovedTool() async throws {
+        let transport = MockChatTransport(responses: [
+            .chunks(.toolCallResponse(toolName: "slow", input: [:], messageId: "a1")),
+            .chunks(.textResponse("Done.", messageId: "a1")),
+        ])
+        let tool = ChatTool(name: "slow", needsApproval: true) { _ in
+            try await Task.sleep(for: .seconds(5))
+            return "finished"
+        }
+        let chat = Chat(transport: transport, configuration: ChatConfiguration(tools: [tool]))
+        await chat.sendMessage("Run it")
+        let approvalID = try #require(chat.messages.last?.toolParts.first?.approval?.id)
+        let approving = Task { await chat.addToolApprovalResponse(approvalID: approvalID, approved: true) }
+        try await waitUntil { chat.isBusy }
+        chat.stop()
+        await approving.value
+        #expect(!chat.isBusy)
+        #expect(transport.requests.count == 1)
+        #expect(chat.messages.last?.toolParts.first?.state == .approvalResponded)
+    }
+
     @Test func toolErrorsBecomeOutputErrors() async throws {
         let transport = MockChatTransport(responses: [
             .chunks(.toolCallResponse(toolName: "fail", input: [:])),

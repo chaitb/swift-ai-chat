@@ -23,8 +23,10 @@ public typealias FileResolver = @Sendable (FilePart) async throws -> ResolvedFil
 
 /// Built-in ways to resolve file parts for direct provider transports.
 public enum FileResolution {
-    /// `data:` URLs become inline bytes and `http(s)` URLs are passed to the provider.
-    /// Anything else, such as a path your own backend serves, fails with a clear error.
+    /// `data:` URLs become inline bytes, `http(s)` URLs are passed to the provider and
+    /// local `file:` URLs are read and sent as bytes. Anything else, such as a path your
+    /// own backend serves, fails with a clear error. Use your own resolver when messages
+    /// can come from a source you don't trust to name local files.
     @Sendable public static func inline(_ file: FilePart) throws -> ResolvedFile? {
         if let dataURL = DataURL(file.url) {
             return .data(dataURL.data, mediaType: file.mediaType.isEmpty ? dataURL.mediaType : file.mediaType)

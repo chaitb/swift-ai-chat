@@ -176,7 +176,7 @@ struct OpenAIResponsesStreamMapper: Sendable {
                 providerMetadata: ["openai": ["itemId": .string(id)]]
             ))]
         default:
-            guard type.hasSuffix("_call") else {
+            guard Self.hostedToolItems.contains(type) else {
                 items[index] = Item(kind: .other, id: id)
                 return []
             }
@@ -190,6 +190,12 @@ struct OpenAIResponsesStreamMapper: Sendable {
             ))]
         }
     }
+
+    /// Output items for tools OpenAI runs itself. Client-run items such as
+    /// `computer_call` or `local_shell_call` are not modeled.
+    private static let hostedToolItems: Set<String> = [
+        "web_search_call", "file_search_call", "code_interpreter_call", "image_generation_call", "mcp_call",
+    ]
 
     private mutating func done(_ item: JSONValue, at index: Int) -> [UIMessageChunk] {
         guard let stored = items[index] else { return [] }
@@ -284,12 +290,12 @@ struct OpenAIResponsesStreamMapper: Sendable {
         switch annotation["type"]?.stringValue {
         case "url_citation":
             guard let url = annotation["url"]?.stringValue, emittedSources.insert(url).inserted else { return [] }
-            return [.sourceURL(SourceURLPart(sourceId: "source-\(emittedSources.count)", url: url, title: annotation["title"]?.stringValue))]
+            return [.sourceURL(SourceURLPart(sourceId: "\(responseID ?? "response")-source-\(emittedSources.count)", url: url, title: annotation["title"]?.stringValue))]
         case "file_citation":
             guard let fileID = annotation["file_id"]?.stringValue, emittedSources.insert(fileID).inserted else { return [] }
             let filename = annotation["filename"]?.stringValue
             return [.sourceDocument(SourceDocumentPart(
-                sourceId: "source-\(emittedSources.count)",
+                sourceId: "\(responseID ?? "response")-source-\(emittedSources.count)",
                 mediaType: "application/octet-stream",
                 title: filename ?? fileID,
                 filename: filename,

@@ -26,7 +26,7 @@ struct StreamingMessageStateTests {
         #expect(state.message.parts == [.stepStart, .text(TextPart(text: "Hello, world!", state: .done))])
         #expect(state.finishReason == .stop)
         #expect(updates[0].messageChanged && !updates[0].updatesStatus)
-        #expect(updates.filter(\.messageChanged).count == 5)
+        #expect(updates.filter(\.messageChanged).count == 6)
     }
 
     @Test func startSetsTheServerMessageID() throws {

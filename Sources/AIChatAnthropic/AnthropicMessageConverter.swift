@@ -135,11 +135,12 @@ enum AnthropicMessageConverter {
             case .tool(let tool):
                 let input = toolInput(tool)
                 if tool.providerExecuted == true {
+                    guard tool.callProviderMetadata?["anthropic"] != nil else { continue }
                     let useType = tool.callProviderMetadata?["anthropic"]?["type"]?.stringValue ?? "server_tool_use"
                     var use: [String: JSONValue] = ["type": .string(useType), "id": .string(tool.toolCallId), "name": .string(tool.toolName), "input": input]
                     if let serverName = tool.callProviderMetadata?["anthropic"]?["serverName"] { use["server_name"] = serverName }
                     assistant.append(.object(use))
-                    if let output = tool.output {
+                    if let output = tool.output ?? tool.resultProviderMetadata?["anthropic"]?["errorContent"] {
                         let resultType = tool.resultProviderMetadata?["anthropic"]?["type"]?.stringValue ?? "\(tool.toolName)_tool_result"
                         assistant.append(["type": .string(resultType), "tool_use_id": .string(tool.toolCallId), "content": output])
                     }

@@ -39,7 +39,7 @@ public final class Chat: Identifiable {
     @ObservationIgnored private var activeState: StreamingMessageState?
     @ObservationIgnored private var resumableState: StreamingMessageState?
     @ObservationIgnored private var lastWrittenMessageID: String?
-    @ObservationIgnored private var toolTasks: [String: Task<Void, Never>] = [:]
+    private var toolTasks: [String: Task<Void, Never>] = [:]
     @ObservationIgnored private var automaticSends = 0
     @ObservationIgnored private var saveTask: Task<Void, Never>?
     @ObservationIgnored private var createdAt: Date
@@ -83,8 +83,8 @@ public final class Chat: Identifiable {
 
     public var lastMessage: UIMessage? { messages.last }
 
-    /// Whether a request is running.
-    public var isBusy: Bool { status.isBusy }
+    /// Whether a request or a client-side tool is running.
+    public var isBusy: Bool { status.isBusy || !toolTasks.isEmpty }
 
     /// The conversation as it would be saved.
     public var snapshot: ChatSnapshot {
@@ -236,7 +236,12 @@ public final class Chat: Identifiable {
         }
         if let localTool, approved, let execute = localTool.execute {
             let call = ToolCall(toolCallId: part.toolCallId, toolName: part.toolName, input: part.input ?? .null, dynamic: part.isDynamic)
-            await runTool(call, execute: execute, options: options)
+            let task = Task { @MainActor [weak self] in
+                guard let self else { return }
+                await runTool(call, execute: execute, options: options)
+            }
+            toolTasks[call.toolCallId] = task
+            await task.value
             return
         }
         await sendAutomaticallyIfNeeded(continuing: messageID, options: options)
@@ -341,6 +346,9 @@ public final class Chat: Identifiable {
         }
 
         flushPublish()
+        if let state = activeState, state.message != messages.last(where: { $0.id == state.message.id }), !state.message.isEmpty || lastWrittenMessageID != nil {
+            writeActiveMessage()
+        }
         let isAbort = Task.isCancelled || failure?.isCancelled == true
         outcome.isAbort = isAbort
         if isAbort {
@@ -383,7 +391,7 @@ public final class Chat: Identifiable {
                 lastWrittenMessageID = state.message.id
                 return state
             }
-            if let last = messages.last, last.role == .assistant, last.toolParts.contains(where: Self.awaitsServer) {
+            if let last = messages.last, last.role == .assistant, last.toolParts.contains(where: { Self.awaitsServer($0) }) {
                 return StreamingMessageState(continuing: last, strict: strict, resumeBehavior: behavior)
             }
             return StreamingMessageState(messageID: configuration.generateID(), strict: strict, resumeBehavior: behavior)
@@ -399,7 +407,7 @@ public final class Chat: Identifiable {
         }
     }
 
-    private static func awaitsServer(_ part: ToolPart) -> Bool {
+    nonisolated private static func awaitsServer(_ part: ToolPart) -> Bool {
         switch part.state {
         case .inputStreaming, .approvalResponded: true
         case .inputAvailable: part.providerExecuted == true

@@ -279,7 +279,8 @@ struct AnthropicStreamMapper: Sendable {
     private mutating func toolResult(type: String, toolUseID: String, content: JSONValue) -> [UIMessageChunk] {
         let metadata: JSONValue = ["anthropic": ["type": .string(type)]]
         if let errorCode = content["error_code"]?.stringValue {
-            return [.toolOutputError(ToolOutputErrorChunk(toolCallId: toolUseID, errorText: errorCode, providerExecuted: true, providerMetadata: metadata))]
+            let errorMetadata: JSONValue = ["anthropic": ["type": .string(type), "errorContent": content]]
+            return [.toolOutputError(ToolOutputErrorChunk(toolCallId: toolUseID, errorText: errorCode, providerExecuted: true, providerMetadata: errorMetadata))]
         }
         var chunks: [UIMessageChunk] = [
             .toolOutputAvailable(ToolOutputAvailableChunk(toolCallId: toolUseID, output: content, providerExecuted: true, providerMetadata: metadata)),

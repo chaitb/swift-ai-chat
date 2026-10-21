@@ -340,6 +340,7 @@ public struct StreamingMessageState: Sendable {
 
         case .startStep:
             message.parts.append(.stepStart)
+            update.messageChanged = true
 
         case .finishStep:
             break

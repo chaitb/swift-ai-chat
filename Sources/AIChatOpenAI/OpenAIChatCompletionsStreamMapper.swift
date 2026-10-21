@@ -78,7 +78,7 @@ struct OpenAIChatCompletionsStreamMapper: Sendable {
         for annotation in delta?["annotations"]?.arrayValue ?? [] {
             let citation = annotation["url_citation"] ?? annotation
             guard let url = citation["url"]?.stringValue, emittedSources.insert(url).inserted else { continue }
-            chunks.append(.sourceURL(SourceURLPart(sourceId: "source-\(emittedSources.count)", url: url, title: citation["title"]?.stringValue)))
+            chunks.append(.sourceURL(SourceURLPart(sourceId: "\(partPrefix)-source-\(emittedSources.count)", url: url, title: citation["title"]?.stringValue)))
         }
         for call in delta?["tool_calls"]?.arrayValue ?? [] {
             let index = call["index"]?.intValue ?? toolCalls.count
