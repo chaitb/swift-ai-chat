@@ -4,7 +4,7 @@ import Observation
 /// Loads the models of a ``ChatModelCatalog`` and keeps the user's choice.
 ///
 /// It holds no views. Bind ``selectedModelID`` to a SwiftUI `Picker` and to
-/// ``Chat/modelID``, or let ``Chat`` follow it with ``Chat/useModel(from:)``.
+/// ``Chat/modelID``.
 ///
 /// ```swift
 /// @State var picker = ModelPicker(catalog: AnthropicModelCatalog(apiKey: key), defaultModelID: "claude-opus-5-5")

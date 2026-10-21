@@ -1,0 +1,20 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v5
+      - name: Swift version
+        run: swift --version
+      - name: Test
+        run: swift test
+      - name: Build the example
+        run: swift build --package-path Examples/ChatCLI
+      - name: Build for iOS
+        run: xcodebuild build -scheme swift-ai-chat-Package -destination 'generic/platform=iOS Simulator' -quiet
