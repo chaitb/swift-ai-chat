@@ -1,0 +1,4 @@
+: keep-alive
+
+data: {"id":"chatcmpl-r1","object":"chat.completion.chunk","created":1792569000,"model":"deepseek-reasoner","choices":[{"index":0,"delta":{"role":"assistant","content":"Hel"},"finish_reason":null}]}
+

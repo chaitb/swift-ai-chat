@@ -1,0 +1,16 @@
+: keep-alive
+
+data: {"id":"chatcmpl-r1","object":"chat.completion.chunk","created":1792569000,"model":"deepseek-reasoner","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-r1","object":"chat.completion.chunk","created":1792569000,"model":"deepseek-reasoner","choices":[{"index":0,"delta":{"reasoning_content":"221 = 13 \u00d7 17"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-r1","object":"chat.completion.chunk","created":1792569000,"model":"deepseek-reasoner","choices":[{"index":0,"delta":{"reasoning_content":", so it is composite."},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-r1","object":"chat.completion.chunk","created":1792569000,"model":"deepseek-reasoner","choices":[{"index":0,"delta":{"content":"No, 221 is 13 \u00d7 17."},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-r1","object":"chat.completion.chunk","created":1792569000,"model":"deepseek-reasoner","choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}
+
+data: {"id":"chatcmpl-r1","object":"chat.completion.chunk","created":1792569000,"model":"deepseek-reasoner","choices":[],"usage":{"prompt_tokens":12,"completion_tokens":30,"prompt_tokens_details":{"cached_tokens":0},"completion_tokens_details":{"reasoning_tokens":18}}}
+
+data: [DONE]
+

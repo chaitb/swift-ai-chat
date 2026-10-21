@@ -7,9 +7,6 @@ import Foundation
 /// tool calls become the user turn that follows, as the API requires. Thinking blocks
 /// keep their signatures so they can be passed back unchanged.
 enum AnthropicMessageConverter {
-    static let deniedToolResult = "The user denied this tool call."
-    static let unfinishedToolResult = "The tool call did not finish, so it has no result."
-
     struct Converted {
         var system: [JSONValue]
         var messages: [JSONValue]
@@ -166,31 +163,9 @@ enum AnthropicMessageConverter {
     }
 
     static func toolResult(_ tool: ToolPart) -> JSONValue {
-        func result(_ content: String, isError: Bool) -> JSONValue {
-            var block: [String: JSONValue] = ["type": "tool_result", "tool_use_id": .string(tool.toolCallId), "content": .string(content)]
-            if isError { block["is_error"] = true }
-            return .object(block)
-        }
-        switch tool.state {
-        case .outputAvailable:
-            switch tool.output {
-            case .string(let text)?: return result(text, isError: false)
-            case let output?: return result(output.jsonString, isError: false)
-            case nil: return result("", isError: false)
-            }
-        case .outputError:
-            return result(tool.errorText ?? "The tool failed.", isError: true)
-        case .outputDenied:
-            return result(denial(tool), isError: true)
-        case .approvalResponded where tool.approval?.approved == false:
-            return result(denial(tool), isError: true)
-        default:
-            return result(unfinishedToolResult, isError: true)
-        }
-    }
-
-    private static func denial(_ tool: ToolPart) -> String {
-        guard let reason = tool.approval?.reason, !reason.isEmpty else { return deniedToolResult }
-        return "\(deniedToolResult) Reason: \(reason)"
+        let result = tool.modelResult
+        var block: [String: JSONValue] = ["type": "tool_result", "tool_use_id": .string(tool.toolCallId), "content": .string(result.text)]
+        if result.isError { block["is_error"] = true }
+        return .object(block)
     }
 }
