@@ -133,9 +133,14 @@ public final class Chat: Identifiable {
 
     /// Sends the conversation as it is, without a new message: to continue after editing
     /// ``messages`` yourself, or to start a flow on a backend that opens the conversation.
-    public func submit(options: ChatRequestOptions = ChatRequestOptions()) async {
+    ///
+    /// The response continues the last message when that's an assistant message. Pass
+    /// `messageID` to continue an earlier assistant message instead, for example when the
+    /// user answers a tool call in it after the conversation moved on. The request's
+    /// ``ChatTransportRequest/messageID`` names the message being continued.
+    public func submit(continuing messageID: String? = nil, options: ChatRequestOptions = ChatRequestOptions()) async {
         await cancelActiveRequest()
-        await run(trigger: .submit, messageID: messages.last?.id, options: options, automatic: false)
+        await run(trigger: .submit, messageID: messageID ?? messages.last?.id, options: options, automatic: false)
     }
 
     /// Replaces the user message `messageID`, drops everything after it and streams a new response.

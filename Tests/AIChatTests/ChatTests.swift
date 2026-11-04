@@ -757,6 +757,30 @@ struct ChatTests {
         #expect(chat.messages[1] == earlier)
     }
 
+    @Test func submitCanContinueAnEarlierAssistantMessage() async throws {
+        let earlier = UIMessage(id: "a1", role: .assistant, parts: [
+            .stepStart,
+            .tool(ToolPart(toolName: "askSurvey", toolCallId: "s1", state: .inputAvailable, input: ["q": "Goal?"])),
+        ])
+        let later = UIMessage.assistant("Sleep 7 to 9 hours.", id: "a2")
+        let transport = MockChatTransport(responses: [.chunks([
+            .start(messageId: "a1"), .startStep, .textStart(id: "t"), .textDelta(id: "t", delta: "Noted."), .textEnd(id: "t"), .finishStep, .finish(),
+        ])])
+        let chat = Chat(messages: [.user("Help", id: "u1"), earlier, .user("Sleep?", id: "u2"), later], transport: transport)
+
+        await chat.addToolOutput(toolCallId: "s1", output: ["goal": "Lose fat"])
+        #expect(transport.requests.isEmpty)
+        await chat.submit(continuing: "a1")
+
+        #expect(transport.requests.count == 1)
+        #expect(transport.requests.first?.messageID == "a1")
+        #expect(chat.messages.map(\.id) == ["u1", "a1", "u2", "a2"])
+        #expect(chat.messages[1].toolPart(callID: "s1")?.output == ["goal": "Lose fat"])
+        #expect(chat.messages[1].text == "Noted.")
+        #expect(chat.messages[3] == later)
+        #expect(chat.status == .ready)
+    }
+
     @Test func aSavedMessageReplaysIntoTheSameMessage() async throws {
         let saved = UIMessage(id: "a1", role: .assistant, parts: [
             .stepStart,
