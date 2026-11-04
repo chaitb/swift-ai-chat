@@ -62,7 +62,7 @@ struct AssistantMessage: View {
                 ApprovalCard(part: part) { approved in
                     if let id = part.approval?.id { respond(id, approved) }
                 }
-                .disabled(isBusy && !isLast)
+                .disabled(isBusy)
             } else {
                 GenericToolCard(part: part)
             }

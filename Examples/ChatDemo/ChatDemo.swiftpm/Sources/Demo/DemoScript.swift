@@ -135,8 +135,8 @@ enum DemoScript {
     }
 
     private static func city(in text: String) -> String? {
-        let skipped: Set<String> = ["the", "a", "an", "this", "that", "my", "our", "today", "tonight", "tomorrow", "now", "morning", "afternoon", "evening", "night", "weekend"]
-        for match in text.matches(of: /\b(?i:in|for|at)\s+(\p{L}+(?:\s+\p{Lu}\p{L}+)?)/) {
+        let skipped: Set<String> = ["the", "a", "an", "this", "that", "my", "our", "today", "tonight", "tomorrow", "now", "morning", "afternoon", "evening", "night", "weekend", "all", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+        for match in text.matches(of: /\b(?i:in|for|at)\s+(\p{L}+(?:\s+\p{Lu}\p{L}+)?)/).reversed() {
             let city = String(match.1)
             let first = city.split(separator: " ").first.map { $0.lowercased() } ?? ""
             if !skipped.contains(first) { return city }
