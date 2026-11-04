@@ -135,8 +135,13 @@ enum DemoScript {
     }
 
     private static func city(in text: String) -> String? {
-        guard let match = text.firstMatch(of: /\b(?i:in|for|at)\s+(\p{L}+(?:\s+\p{Lu}\p{L}+)?)/) else { return nil }
-        return String(match.1)
+        let skipped: Set<String> = ["the", "a", "an", "this", "that", "my", "our", "today", "tonight", "tomorrow", "now", "morning", "afternoon", "evening", "night", "weekend"]
+        for match in text.matches(of: /\b(?i:in|for|at)\s+(\p{L}+(?:\s+\p{Lu}\p{L}+)?)/) {
+            let city = String(match.1)
+            let first = city.split(separator: " ").first.map { $0.lowercased() } ?? ""
+            if !skipped.contains(first) { return city }
+        }
+        return nil
     }
 
     private static func id() -> String { "part_" + ChatID.generate() }

@@ -52,8 +52,8 @@ enum Showcase: String, CaseIterable, Identifiable, Sendable {
     static func match(_ prompt: String) -> Showcase? {
         let words = Set(prompt.lowercased().split { !$0.isLetter && $0 != "'" }.map(String.init))
         let keywords: [(Showcase, [String])] = [
-            (.weather, ["weather", "forecast", "temperature", "rain", "sunny", "umbrella"]),
-            (.approval, ["book", "table", "reserve", "reservation", "approve", "dinner"]),
+            (.weather, ["weather", "forecast", "temperature", "rain", "raining", "rainy", "sunny", "umbrella"]),
+            (.approval, ["book", "booking", "table", "reserve", "reservation", "approve", "dinner"]),
             (.sources, ["source", "sources", "cite", "news", "swift", "research", "latest"]),
             (.markdown, ["markdown", "format", "formatting", "code"]),
             (.reasoning, ["think", "plan", "reason", "trip", "weekend"]),

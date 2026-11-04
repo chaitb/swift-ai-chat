@@ -13,6 +13,7 @@ struct ConversationView: View {
     @State private var isAtBottom = true
     @State private var following = true
     @State private var viewportHeight: CGFloat = 0
+    @State private var continuing: String?
     @FocusState private var composerFocused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -32,11 +33,12 @@ struct ConversationView: View {
     var body: some View {
         let visibleMessages = visibleMessagesList
         let turns = turnIDs(for: visibleMessages)
-        let showsPending = chat.isBusy && flight == nil && visibleMessages.last?.role == .user
+        let showsPending = chat.isBusy && continuing == nil && flight == nil && visibleMessages.last?.role == .user
+        let activeID = chat.isBusy ? continuing ?? visibleMessages.last?.id : nil
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 22) {
                 ForEach(Array(visibleMessages.enumerated()), id: \.element.id) { index, message in
-                    row(for: message, turnID: turns[index], isLast: index == visibleMessages.count - 1)
+                    row(for: message, turnID: turns[index], isLast: index == visibleMessages.count - 1, isActive: message.id == activeID)
                         .id(message.id)
                         .transition(message.role == .user ? .identity : .asymmetric(
                             insertion: .opacity.combined(with: .offset(y: 14)),
@@ -136,7 +138,7 @@ struct ConversationView: View {
     }
 
     @ViewBuilder
-    private func row(for message: UIMessage, turnID: String, isLast: Bool) -> some View {
+    private func row(for message: UIMessage, turnID: String, isLast: Bool, isActive: Bool) -> some View {
         if message.role == .user {
             UserBubble(message: message, namespace: namespace)
         } else {
@@ -147,6 +149,7 @@ struct ConversationView: View {
                 isLast: isLast,
                 status: chat.status,
                 isBusy: chat.isBusy,
+                isActive: isActive,
                 namespace: namespace,
                 respond: { approvalID, approved in
                     if isLast { following = true }
@@ -158,8 +161,10 @@ struct ConversationView: View {
 
     private func answer(approvalID: String, approved: Bool, in messageID: String) async {
         await chat.addToolApprovalResponse(approvalID: approvalID, approved: approved)
-        guard chat.messages.last?.id != messageID, !chat.status.isBusy else { return }
+        guard chat.messages.last?.id != messageID, !chat.isBusy else { return }
+        continuing = messageID
         await chat.submit(continuing: messageID)
+        continuing = nil
     }
 
     private func turnIDs(for messages: [UIMessage]) -> [String] {

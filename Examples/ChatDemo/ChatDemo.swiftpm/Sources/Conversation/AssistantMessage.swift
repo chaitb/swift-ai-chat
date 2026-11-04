@@ -8,12 +8,12 @@ struct AssistantMessage: View {
     var isLast: Bool
     var status: ChatStatus
     var isBusy: Bool
+    var isActive: Bool
     var namespace: Namespace.ID
     var respond: (String, Bool) -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    private var isActive: Bool { isLast && isBusy }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -62,6 +62,7 @@ struct AssistantMessage: View {
                 ApprovalCard(part: part) { approved in
                     if let id = part.approval?.id { respond(id, approved) }
                 }
+                .disabled(isBusy && !isLast)
             } else {
                 GenericToolCard(part: part)
             }
