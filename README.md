@@ -203,7 +203,14 @@ let chat = try await Chat.restore(id: savedID, transport: transport, configurati
 
 Every failure surfaces as a `ChatError` with a kind, the provider's error code, the HTTP status, the request id and whether a retry may help. A `retryable` flag in the error body wins over the status code. Text that streamed before an error stays in the message.
 
-## Example
+## Examples
+
+[`Examples/ChatDemo`](Examples/ChatDemo) is an iOS 26 app that runs offline with a scripted transport and shows streaming markdown, reasoning, a client tool card, an approval card, sources and saved chats, with Liquid Glass and streaming animations. Paste an Anthropic or OpenAI key, or an AI SDK endpoint, in its settings to talk to a real model.
+
+```sh
+cd Examples/ChatDemo/ChatDemo.swiftpm
+xcodebuild -scheme ChatDemo -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build
+```
 
 [`Examples/ChatCLI`](Examples/ChatCLI) runs a tool-using conversation against any backend:
 
