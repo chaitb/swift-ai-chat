@@ -27,8 +27,9 @@ struct BaselineCompatibilityTests {
                 prepareSendMessagesRequest: { [self] request, prepared in
                     var prepared = prepared
                     let flow = request.metadata?["flow"]?.stringValue
-                    let newest = flow == nil ? request.messages.suffix(1).map(\.jsonValue) : []
-                    var body: [String: JSONValue] = ["messages": .array(newest)]
+                    let continued = request.messageID.flatMap { id in request.messages.last { $0.id == id } }
+                    let sent = flow == nil ? (continued ?? request.messages.last).map { [$0.jsonValue] } ?? [] : []
+                    var body: [String: JSONValue] = ["messages": .array(sent)]
                     if let threadID { body["threadId"] = .string(threadID) }
                     prepared.body = .object(body)
                     if let flow {
@@ -289,6 +290,35 @@ struct BaselineCompatibilityTests {
         #expect(chat.messages.count == 2)
         #expect(chat.messages.last?.id == pending.id)
         #expect(chat.messages.last?.text.hasSuffix("Saved your goals.") == true)
+        #expect(chat.status == .ready)
+    }
+
+    @Test func anApprovalAnsweredAfterTheConversationMovedOnContinuesThatReply() async throws {
+        let session = BaselineSession()
+        let http = StubHTTPClient([try stub("tool-approval"), try stub("text-reply"), try stub("tool-approval-continue")])
+        let chat = Chat(transport: session.transport(httpClient: http), configuration: ChatConfiguration(sendAutomaticallyWhen: .never))
+        await chat.sendMessage("Remove the Greek yogurt")
+        let pending = try #require(chat.messages.last)
+        let delete = try #require(pending.toolPart(callID: "call-2-0"))
+        await chat.sendMessage("How much sleep do I need?")
+        let later = try #require(chat.messages.last)
+        #expect(later.id != pending.id)
+
+        await chat.addToolApprovalResponse(approvalID: try #require(delete.approval?.id), approved: true)
+        #expect(http.requests.count == 2)
+        await chat.submit(continuing: pending.id)
+
+        #expect(http.requests.count == 3)
+        let sent = try #require(http.requestBodies.last?["messages"]?.arrayValue)
+        #expect(sent.count == 1)
+        #expect(sent.first?["id"] == .string(pending.id))
+        let sentDelete = sent.first?["parts"]?.arrayValue?.first { $0["toolCallId"] == "call-2-0" }
+        #expect(sentDelete?["state"] == "approval-responded")
+        #expect(chat.messages.count == 4)
+        #expect(chat.messages[1].id == pending.id)
+        #expect(chat.messages[1].toolPart(callID: "call-2-0")?.state == .outputAvailable)
+        #expect(chat.messages[1].text.count > pending.text.count)
+        #expect(chat.messages.last == later)
         #expect(chat.status == .ready)
     }
 

@@ -189,6 +189,8 @@ A replay doesn't announce a tool call again: `onToolCall` and a tool's `execute`
 
 When a request continues an assistant message, for example after a tool result or when a flow starts a conversation with `submit(options:)`, and the server's `start` chunk names a different message, the response becomes a new message after it instead of merging into it.
 
+`sendAutomaticallyWhen` only looks at the last message. When the user answers a tool call in an earlier message, continue that message yourself with `submit(continuing: messageID)`. The request's `messageID` names it, so the transport can send that message.
+
 ## Saving conversations
 
 Set a `ChatStore` and the chat saves after every user message and finished response. `FileChatStore` writes JSON files to Application Support; implement the protocol for SwiftData, GRDB or your server.
