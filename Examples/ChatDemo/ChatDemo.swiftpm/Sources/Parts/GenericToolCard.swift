@@ -5,14 +5,15 @@ struct GenericToolCard: View {
     var part: ToolPart
 
     @State private var expanded = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Button {
-                withAnimation(.snappy(duration: 0.3)) { expanded.toggle() }
+                withAnimation(reduceMotion ? .easeOut(duration: 0.2) : .snappy(duration: 0.3)) { expanded.toggle() }
             } label: {
                 HStack(spacing: 10) {
-                    ToolStatusIcon(state: part.state, idleSymbol: "wrench.and.screwdriver")
+                    ToolStatusIcon(part: part, idleSymbol: "wrench.and.screwdriver")
                     Text(part.title ?? part.toolName)
                         .font(.subheadline.weight(.semibold).monospaced())
                         .shimmer(part.isRunning)
@@ -38,12 +39,12 @@ struct GenericToolCard: View {
                         payload("Error", error)
                     }
                 }
-                .transition(.opacity.combined(with: .offset(y: -4)))
+                .transition(Motion.insertion(.opacity.combined(with: .offset(y: -4)), reduced: reduceMotion))
             }
         }
         .padding(14)
         .background(.fill.quaternary, in: .rect(cornerRadius: 18, style: .continuous))
-        .animation(.spring(duration: 0.4, bounce: 0.15), value: part.state)
+        .animation(Motion.spring(0.4, bounce: 0.15, reduced: reduceMotion), value: part.state)
     }
 
     private func payload(_ title: String, _ text: String) -> some View {

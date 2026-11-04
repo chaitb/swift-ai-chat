@@ -64,10 +64,9 @@ struct SettingsView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save", systemImage: "checkmark") {
-                        Task {
-                            await model.apply(settings)
-                            dismiss()
-                        }
+                        let staged = settings
+                        dismiss()
+                        Task { await model.apply(staged) }
                     }
                     .buttonStyle(.glassProminent)
                 }

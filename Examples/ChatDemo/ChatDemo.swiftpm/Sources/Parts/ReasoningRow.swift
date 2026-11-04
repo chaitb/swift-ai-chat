@@ -15,7 +15,7 @@ struct ReasoningRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Button {
-                withAnimation(.snappy(duration: 0.32)) { expanded = !isOpen }
+                withAnimation(reduceMotion ? .easeOut(duration: 0.2) : .snappy(duration: 0.32)) { expanded = !isOpen }
             } label: {
                 HStack(spacing: 6) {
                     Image(systemName: "brain")
@@ -42,10 +42,7 @@ struct ReasoningRow: View {
                     .overlay(alignment: .leading) {
                         Capsule().fill(.quaternary).frame(width: 2)
                     }
-                    .transition(.asymmetric(
-                        insertion: .opacity.combined(with: .offset(y: -6)),
-                        removal: .opacity
-                    ))
+                    .transition(Motion.insertion(.opacity.combined(with: .offset(y: -6)), reduced: reduceMotion))
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -53,7 +50,7 @@ struct ReasoningRow: View {
             if streaming, startedAt == nil { startedAt = .now }
             if !streaming, let startedAt, duration == nil { duration = Date.now.timeIntervalSince(startedAt) }
         }
-        .animation(.snappy(duration: 0.35), value: isStreaming)
+        .animation(reduceMotion ? .easeOut(duration: 0.2) : .snappy(duration: 0.35), value: isStreaming)
     }
 
     private var label: String {

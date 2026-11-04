@@ -12,15 +12,18 @@ final class AppModel {
     private(set) var settings: BackendSettings
     private(set) var picker: ModelPicker?
 
-    @ObservationIgnored private let store = FileChatStore()
+    @ObservationIgnored private let store: FileChatStore
+    @ObservationIgnored private var isSwitching = false
 
     init() {
         let settings = BackendSettings.load()
-        self.settings = settings
+        let store = FileChatStore()
         let picker = Self.makePicker(for: settings)
+        self.settings = settings
+        self.store = store
         self.picker = picker
-        chat = Chat(modelID: picker?.selectedModelID, transport: Self.makeTransport(for: settings), configuration: ChatConfiguration())
-        chat = Chat(modelID: picker?.selectedModelID, transport: Self.makeTransport(for: settings), configuration: configuration)
+        chat = Chat(modelID: picker?.selectedModelID, transport: Self.makeTransport(for: settings), configuration: Self.baseConfiguration(store: store))
+        chat.configuration = configuration
     }
 
     var backend: Backend { settings.effectiveBackend }
@@ -51,28 +54,34 @@ final class AppModel {
     }
 
     func newChat() async {
-        guard !chat.messages.isEmpty else { return }
-        chat.stop()
-        await chat.waitForPendingSaves()
+        guard !chat.messages.isEmpty, !isSwitching else { return }
+        isSwitching = true
+        defer { isSwitching = false }
+        await settle(chat)
         chat = Chat(modelID: picker?.selectedModelID, transport: Self.makeTransport(for: settings), configuration: configuration)
         await reloadList()
     }
 
     func select(_ id: String) async {
-        guard id != chat.id else { return }
-        chat.stop()
-        await chat.waitForPendingSaves()
-        let transport = Self.makeTransport(for: settings)
-        chat = (try? await Chat.restore(id: id, transport: transport, configuration: configuration))
-            ?? Chat(modelID: picker?.selectedModelID, transport: transport, configuration: configuration)
+        guard id != chat.id, !isSwitching else { return }
+        isSwitching = true
+        defer { isSwitching = false }
+        await settle(chat)
+        guard let restored = try? await Chat.restore(id: id, transport: Self.makeTransport(for: settings), configuration: configuration) else {
+            await reloadList()
+            return
+        }
+        chat = restored
         syncModel()
         await reloadList()
     }
 
     func delete(_ id: String) async {
+        guard !isSwitching else { return }
+        isSwitching = true
+        defer { isSwitching = false }
         if id == chat.id {
-            chat.stop()
-            await chat.waitForPendingSaves()
+            await settle(chat)
             chat = Chat(modelID: picker?.selectedModelID, transport: Self.makeTransport(for: settings), configuration: configuration)
         }
         try? await store.deleteChat(id: id)
@@ -80,16 +89,28 @@ final class AppModel {
     }
 
     func apply(_ newSettings: BackendSettings) async {
-        newSettings.save()
+        newSettings.save(replacing: settings)
         let changed = newSettings != settings
         settings = newSettings
-        guard changed else { return }
+        guard changed, !isSwitching else { return }
+        isSwitching = true
+        defer { isSwitching = false }
         picker = Self.makePicker(for: newSettings)
-        chat.stop()
-        await chat.waitForPendingSaves()
+        await settle(chat)
         chat = Chat(snapshot: chat.snapshot, transport: Self.makeTransport(for: newSettings), configuration: configuration)
-        await picker?.load()
         syncModel()
+        Task {
+            await picker?.load()
+            syncModel()
+        }
+    }
+
+    private func settle(_ chat: Chat) async {
+        chat.stop()
+        for _ in 0..<100 where chat.status.isBusy {
+            try? await Task.sleep(for: .milliseconds(20))
+        }
+        await chat.waitForPendingSaves()
     }
 
     func syncModel() {
@@ -98,13 +119,22 @@ final class AppModel {
     }
 
     private var configuration: ChatConfiguration {
+        var configuration = Self.baseConfiguration(store: store)
+        configuration.onFinish = { [weak self] _ in
+            guard let self else { return }
+            let finished = chat
+            Task {
+                await finished.waitForPendingSaves()
+                await self.reloadList()
+            }
+        }
+        return configuration
+    }
+
+    private static func baseConfiguration(store: FileChatStore) -> ChatConfiguration {
         ChatConfiguration(
             tools: [DemoTools.weather],
             sendAutomaticallyWhen: .any(.lastAssistantMessageIsCompleteWithToolCalls, .lastAssistantMessageIsCompleteWithApprovalResponses),
-            onFinish: { [weak self] _ in
-                guard let self else { return }
-                Task { await self.chat.waitForPendingSaves(); await self.reloadList() }
-            },
             updateInterval: .milliseconds(24),
             store: store
         )

@@ -77,6 +77,7 @@ struct CodeBlockView: View {
     var isStreaming: Bool
 
     @State private var copied = 0
+    @State private var showsCheck = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -88,8 +89,14 @@ struct CodeBlockView: View {
                 Button {
                     UIPasteboard.general.string = code
                     copied += 1
+                    let count = copied
+                    Task {
+                        try? await Task.sleep(for: .seconds(1.5))
+                        if copied == count { showsCheck = false }
+                    }
+                    showsCheck = true
                 } label: {
-                    Image(systemName: copied > 0 ? "checkmark" : "doc.on.doc")
+                    Image(systemName: showsCheck ? "checkmark" : "doc.on.doc")
                         .contentTransition(.symbolEffect(.replace))
                         .font(.caption)
                 }

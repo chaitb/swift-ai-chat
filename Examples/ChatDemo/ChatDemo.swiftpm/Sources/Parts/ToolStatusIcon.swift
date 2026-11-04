@@ -2,7 +2,7 @@ import AIChat
 import SwiftUI
 
 struct ToolStatusIcon: View {
-    var state: ToolPart.State
+    var part: ToolPart
     var idleSymbol: String
     var onTint = false
 
@@ -10,29 +10,28 @@ struct ToolStatusIcon: View {
 
     var body: some View {
         Image(systemName: symbol)
-            .symbolRenderingMode(.hierarchical)
+            .symbolRenderingMode(onTint ? .monochrome : .hierarchical)
             .foregroundStyle(onTint ? .white : tint)
             .symbolEffect(.variableColor.iterative.dimInactiveLayers, options: .repeating, isActive: isWorking && !reduceMotion)
             .contentTransition(.symbolEffect(.replace.magic(fallback: .downUp.byLayer)))
-            .symbolEffect(.bounce.up, value: state == .outputAvailable)
+            .symbolEffect(.bounce.up, options: reduceMotion ? .nonRepeating.speed(100) : .nonRepeating, value: state == .outputAvailable)
             .frame(width: 22)
     }
 
-    private var isWorking: Bool {
-        switch state {
-        case .inputStreaming, .inputAvailable, .approvalResponded: true
-        default: false
-        }
-    }
+    private var state: ToolPart.State { part.state }
+
+    private var isWorking: Bool { part.isRunning }
 
     private var symbol: String {
+        if isWorking { return "progress.indicator" }
         switch state {
-        case .inputStreaming, .inputAvailable, .approvalResponded: "progress.indicator"
-        case .outputAvailable: "checkmark.circle.fill"
-        case .outputError: "exclamationmark.triangle.fill"
-        case .outputDenied: "xmark.circle.fill"
-        case .approvalRequested: "hand.raised.fill"
-        case .other: idleSymbol
+        case .inputStreaming, .inputAvailable: return "progress.indicator"
+        case .approvalResponded: return "xmark.circle.fill"
+        case .outputAvailable: return "checkmark.circle.fill"
+        case .outputError: return "exclamationmark.triangle.fill"
+        case .outputDenied: return "xmark.circle.fill"
+        case .approvalRequested: return "hand.raised.fill"
+        case .other: return idleSymbol
         }
     }
 

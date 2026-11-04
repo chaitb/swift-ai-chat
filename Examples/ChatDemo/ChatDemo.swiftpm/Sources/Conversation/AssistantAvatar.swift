@@ -3,14 +3,15 @@ import SwiftUI
 struct AssistantAvatar: View {
     var isWorking: Bool
 
+    @ScaledMetric(relativeTo: .subheadline) private var size: CGFloat = 24
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         Image(systemName: "sparkle")
-            .font(.system(size: 12, weight: .bold))
+            .font(.system(size: size / 2, weight: .bold))
             .foregroundStyle(.white)
             .symbolEffect(.breathe.pulse.byLayer, options: .repeating, isActive: isWorking && !reduceMotion)
-            .frame(width: 24, height: 24)
+            .frame(width: size, height: size)
             .background(.tint, in: .circle)
             .accessibilityHidden(true)
     }

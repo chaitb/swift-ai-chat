@@ -94,20 +94,29 @@ struct StreamRenderer: TextRenderer {
                     context.draw(run)
                     continue
                 }
+                let duration = reduceMotion ? 0.25 : ArrivalTracker.fadeDuration
+                let runProgress = min(max((now - arrival.time) / duration, 0), 1)
+                if runProgress >= 1 && reduceMotion {
+                    context.draw(run)
+                    continue
+                }
+                var runContext = context
+                let runEased = 1 - pow(1 - runProgress, 3)
+                if !reduceMotion && runEased < 0.85 {
+                    runContext.addFilter(.blur(radius: (1 - runEased) * 5))
+                }
                 for (index, slice) in run.enumerated() {
                     let delay = reduceMotion ? 0 : Double(index) * 0.012
-                    let duration = reduceMotion ? 0.25 : ArrivalTracker.fadeDuration
                     let progress = min(max((now - arrival.time - delay) / duration, 0), 1)
                     if progress >= 1 {
-                        context.draw(slice)
+                        runContext.draw(slice)
                         continue
                     }
                     let eased = 1 - pow(1 - progress, 3)
-                    var glyph = context
+                    var glyph = runContext
                     glyph.opacity = eased
                     if !reduceMotion {
                         glyph.translateBy(x: 0, y: (1 - eased) * 4)
-                        glyph.addFilter(.blur(radius: (1 - eased) * 6))
                     }
                     glyph.draw(slice)
                 }
@@ -127,7 +136,7 @@ struct StreamingText: View {
     var body: some View {
         let segments = tracker.segments(for: content, streaming: isStreaming)
         let caret = isStreaming && showsCaret
-        let settleEnd = caret ? Date.distantFuture : Date(timeIntervalSinceReferenceDate: tracker.lastArrival + ArrivalTracker.fadeDuration + 0.4)
+        let settleEnd = caret && !reduceMotion ? Date.distantFuture : Date(timeIntervalSinceReferenceDate: tracker.lastArrival + ArrivalTracker.fadeDuration + 0.4)
         TimelineView(FrameSchedule(end: settleEnd)) { timeline in
             composed(segments, caret: caret)
                 .textRenderer(StreamRenderer(now: timeline.date.timeIntervalSinceReferenceDate, reduceMotion: reduceMotion))

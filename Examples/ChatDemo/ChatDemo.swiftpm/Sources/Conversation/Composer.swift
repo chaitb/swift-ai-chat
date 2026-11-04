@@ -16,6 +16,8 @@ struct Composer: View {
     var onStop: () -> Void
 
     @State private var sends = 0
+    @ScaledMetric(relativeTo: .body) private var fieldHeight: CGFloat = 50
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var canSend: Bool {
         !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -33,22 +35,21 @@ struct Composer: View {
                     if let flight, !flight.landed {
                         Text(flight.text)
                             .lineLimit(6)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 10)
+                            .padding(.horizontal, 18)
+                            .padding(.vertical, 13)
                             .matchedGeometryEffect(id: flight.id, in: namespace, anchor: .bottomTrailing)
-                            .padding(.leading, 4)
                             .allowsHitTesting(false)
                     }
                 }
-                .frame(minHeight: 50)
+                .frame(minHeight: fieldHeight)
                 .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 25, style: .continuous))
 
                 Button(action: primaryAction) {
                     Image(systemName: isBusy ? "stop.fill" : "arrow.up")
-                        .font(.system(size: isBusy ? 15 : 18, weight: .bold))
+                        .font(.system(size: 17, weight: .bold))
                         .contentTransition(.symbolEffect(.replace.magic(fallback: .downUp)))
                         .foregroundStyle(isBusy || canSend ? AnyShapeStyle(.white) : AnyShapeStyle(.tertiary))
-                        .frame(width: 50, height: 50)
+                        .frame(width: fieldHeight, height: fieldHeight)
                         .contentShape(.circle)
                 }
                 .buttonStyle(.plain)
@@ -58,9 +59,9 @@ struct Composer: View {
                 .sensoryFeedback(.impact(weight: .light), trigger: sends)
             }
         }
-        .animation(.spring(duration: 0.35, bounce: 0.25), value: isBusy)
-        .animation(.spring(duration: 0.3, bounce: 0.2), value: canSend)
-        .animation(.snappy(duration: 0.22), value: draft.count / 24)
+        .animation(Motion.spring(0.35, bounce: 0.25, reduced: reduceMotion), value: isBusy)
+        .animation(Motion.spring(0.3, reduced: reduceMotion), value: canSend)
+        .animation(reduceMotion ? nil : .snappy(duration: 0.22), value: draft)
     }
 
     private func primaryAction() {

@@ -4,6 +4,8 @@ import SwiftUI
 struct SourcesRow: View {
     var sources: [SourceURLPart]
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Label("Sources", systemImage: "link")
@@ -13,17 +15,15 @@ struct SourcesRow: View {
                 HStack(spacing: 8) {
                     ForEach(Array(sources.enumerated()), id: \.element.sourceId) { index, source in
                         SourceChip(index: index + 1, source: source)
-                            .transition(.asymmetric(
-                                insertion: .opacity.combined(with: .scale(scale: 0.85, anchor: .leading)),
-                                removal: .opacity
-                            ))
+                            .transition(Motion.insertion(.opacity.combined(with: .scale(scale: 0.85, anchor: .leading)), reduced: reduceMotion))
                     }
                 }
                 .padding(.vertical, 2)
             }
-            .scrollClipDisabled()
+            .contentMargins(.horizontal, 18, for: .scrollContent)
+            .padding(.horizontal, -18)
         }
-        .animation(.spring(duration: 0.45, bounce: 0.25), value: sources.count)
+        .animation(Motion.spring(0.45, bounce: 0.25, reduced: reduceMotion), value: sources.count)
     }
 }
 

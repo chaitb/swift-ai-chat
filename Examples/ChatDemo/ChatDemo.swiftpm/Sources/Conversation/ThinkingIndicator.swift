@@ -17,5 +17,6 @@ struct ThinkingIndicator: View {
                 .padding(.leading, 2)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .transition(.asymmetric(insertion: .opacity, removal: .identity))
     }
 }

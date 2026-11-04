@@ -5,6 +5,8 @@ struct WeatherCard: View {
     var part: ToolPart
 
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @ScaledMetric(relativeTo: .largeTitle) private var heroSize: CGFloat = 64
 
     private var report: WeatherReport? {
         guard part.state == .outputAvailable else { return nil }
@@ -20,10 +22,7 @@ struct WeatherCard: View {
             header
             if let report {
                 details(report)
-                    .transition(.asymmetric(
-                        insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: .top)),
-                        removal: .opacity
-                    ))
+                    .transition(.opacity)
             }
         }
         .foregroundStyle(report == nil ? AnyShapeStyle(.primary) : AnyShapeStyle(.white))
@@ -32,20 +31,20 @@ struct WeatherCard: View {
                 .fill(report == nil ? AnyShapeStyle(.fill.quaternary) : AnyShapeStyle(sky(report)))
         }
         .clipShape(.rect(cornerRadius: 22, style: .continuous))
-        .animation(.spring(duration: 0.55, bounce: 0.18), value: report)
+        .animation(reduceMotion ? .easeOut(duration: 0.2) : .spring(duration: 0.55, bounce: 0.12), value: report)
         .accessibilityElement(children: .combine)
     }
 
     private var header: some View {
         HStack(spacing: 10) {
-            ToolStatusIcon(state: part.state, idleSymbol: "cloud.sun", onTint: report != nil)
+            ToolStatusIcon(part: part, idleSymbol: "cloud.sun", onTint: report != nil)
             VStack(alignment: .leading, spacing: 1) {
                 Text("get_weather")
                     .font(.caption.monospaced())
                     .opacity(0.7)
                 Text(status)
                     .font(.subheadline.weight(.semibold))
-                    .contentTransition(.opacity)
+                    .contentTransition(.identity)
                     .shimmer(part.isRunning)
             }
             Spacer()
@@ -67,16 +66,16 @@ struct WeatherCard: View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .center) {
                 Text("\(report.temperature)°")
-                    .font(.system(size: 64, weight: .thin, design: .rounded))
+                    .font(.system(size: heroSize, weight: .thin, design: .rounded))
                     .contentTransition(.numericText(value: Double(report.temperature)))
                 Spacer()
                 VStack(alignment: .trailing, spacing: 4) {
                     Image(systemName: report.symbol)
                         .symbolRenderingMode(.multicolor)
-                        .font(.system(size: 34))
+                        .font(.largeTitle)
                     Text(report.condition)
                         .font(.subheadline.weight(.medium))
-                    Text("H:\(report.high)°  L:\(report.low)°")
+                    Text("H \(report.high)° · L \(report.low)°")
                         .font(.caption)
                         .opacity(0.8)
                 }

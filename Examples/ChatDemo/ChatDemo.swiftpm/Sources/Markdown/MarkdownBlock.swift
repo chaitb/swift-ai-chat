@@ -38,7 +38,16 @@ enum MarkdownBlock: Hashable, Sendable {
         var code: (language: String?, lines: [String])?
 
         func flush() {
-            if !paragraph.isEmpty { blocks.append(.paragraph(paragraph.joined(separator: "\n"))); paragraph = [] }
+            if !paragraph.isEmpty {
+                var text = ""
+                for (index, line) in paragraph.enumerated() {
+                    text += line.trimmingCharacters(in: .whitespaces)
+                    guard index < paragraph.count - 1 else { continue }
+                    text += line.hasSuffix("  ") ? "\n" : " "
+                }
+                blocks.append(.paragraph(text))
+                paragraph = []
+            }
             if !bullets.isEmpty { blocks.append(.bullets(bullets)); bullets = [] }
             if !numbered.isEmpty { blocks.append(.numbered(numbered)); numbered = [] }
             if !quote.isEmpty { blocks.append(.quote(quote.joined(separator: "\n"))); quote = [] }
@@ -93,7 +102,7 @@ enum MarkdownBlock: Hashable, Sendable {
                 continue
             }
             if !bullets.isEmpty || !numbered.isEmpty || !quote.isEmpty { flush() }
-            paragraph.append(trimmed)
+            paragraph.append(String(line.drop { $0 == " " || $0 == "\t" }))
         }
         if let open = code {
             flush()

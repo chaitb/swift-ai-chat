@@ -25,7 +25,7 @@ struct ChatListView: View {
                                     .font(.body.weight(.medium))
                                     .foregroundStyle(.primary)
                                     .lineLimit(1)
-                                Text("\(summary.messageCount) messages · \(summary.updatedAt.formatted(.relative(presentation: .named)))")
+                                Text("^[\(summary.messageCount) message](inflect: true) · \(summary.updatedAt.formatted(.relative(presentation: .named)))")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }

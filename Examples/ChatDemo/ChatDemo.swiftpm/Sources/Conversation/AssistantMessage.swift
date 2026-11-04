@@ -11,6 +11,8 @@ struct AssistantMessage: View {
     var namespace: Namespace.ID
     var respond: (String, Bool) -> Void
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     private var isActive: Bool { isLast && isBusy }
 
     var body: some View {
@@ -19,18 +21,18 @@ struct AssistantMessage: View {
             ForEach(items) { item in
                 view(for: item)
                     .transition(.asymmetric(
-                        insertion: .opacity.combined(with: .scale(scale: 0.97, anchor: .topLeading)).combined(with: .offset(y: 6)),
+                        insertion: Motion.insertion(.opacity.combined(with: .scale(scale: 0.97, anchor: .topLeading)).combined(with: .offset(y: 6)), reduced: reduceMotion),
                         removal: .opacity
                     ))
             }
-            if isLast && status == .submitted && !items.isEmpty {
+            if isActive && (status == .submitted || items.isEmpty) {
                 ThinkingDots()
                     .padding(.leading, 4)
                     .transition(.opacity.combined(with: .scale(scale: 0.8, anchor: .leading)))
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .animation(.spring(duration: 0.45, bounce: 0.2), value: items.map(\.id))
+        .animation(Motion.spring(0.45, reduced: reduceMotion), value: items.map(\.id))
         .animation(.easeOut(duration: 0.2), value: status)
     }
 

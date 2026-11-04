@@ -16,7 +16,7 @@ struct ConversationView: View {
     @FocusState private var composerFocused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    private var visibleMessages: [UIMessage] {
+    private var visibleMessagesList: [UIMessage] {
         chat.messages.filter { message in
             guard message.role != .system else { return false }
             guard let flight, !flight.landed else { return true }
@@ -24,19 +24,19 @@ struct ConversationView: View {
         }
     }
 
-    private var showsPending: Bool {
-        chat.isBusy && visibleMessages.last?.role == .user
-    }
 
     private var showsEmptyState: Bool {
         chat.messages.isEmpty && flight == nil
     }
 
     var body: some View {
+        let visibleMessages = visibleMessagesList
+        let turns = turnIDs(for: visibleMessages)
+        let showsPending = chat.isBusy && flight == nil && visibleMessages.last?.role == .user
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 22) {
                 ForEach(Array(visibleMessages.enumerated()), id: \.element.id) { index, message in
-                    row(for: message, turnID: turnID(before: index))
+                    row(for: message, turnID: turns[index], isLast: index == visibleMessages.count - 1)
                         .id(message.id)
                         .transition(message.role == .user ? .identity : .asymmetric(
                             insertion: .opacity.combined(with: .offset(y: 14)),
@@ -45,7 +45,6 @@ struct ConversationView: View {
                 }
                 if showsPending {
                     ThinkingIndicator(name: assistantName, turnID: visibleMessages.last?.id ?? "", namespace: namespace)
-                        .transition(.opacity.combined(with: .offset(y: 10)))
                 }
                 if chat.status == .error, let error = chat.error {
                     ErrorBanner(error: error) {
@@ -56,11 +55,12 @@ struct ConversationView: View {
             }
             .padding(.horizontal, 18)
             .padding(.top, 12)
-            .padding(.bottom, 20)
-            .frame(minHeight: viewportHeight, alignment: .bottom)
+            .padding(.bottom, 28)
+            .frame(maxWidth: 720)
+            .frame(maxWidth: .infinity, minHeight: viewportHeight, alignment: .bottom)
             .animation(reduceMotion ? .easeOut(duration: 0.2) : .spring(duration: 0.5, bounce: 0.22), value: visibleMessages.map(\.id))
             .animation(reduceMotion ? .easeOut(duration: 0.2) : .spring(duration: 0.45, bounce: 0.2), value: showsPending)
-            .animation(.snappy, value: chat.status)
+            .animation(reduceMotion ? .easeOut(duration: 0.2) : .snappy, value: chat.status)
         }
         .scrollPosition($position)
         .defaultScrollAnchor(.bottom, for: .initialOffset)
@@ -76,7 +76,7 @@ struct ConversationView: View {
         }
         .onScrollGeometryChange(for: CGFloat.self) { $0.contentSize.height } action: { _, _ in
             guard following else { return }
-            if reduceMotion {
+            if reduceMotion || chat.status == .streaming {
                 position.scrollTo(edge: .bottom)
             } else {
                 withAnimation(.smooth(duration: 0.28)) { position.scrollTo(edge: .bottom) }
@@ -88,10 +88,15 @@ struct ConversationView: View {
         }
         .overlay {
             if showsEmptyState {
-                EmptyStateView(subtitle: emptySubtitle) { showcase in
-                    send(showcase.prompt)
+                ScrollView {
+                    EmptyStateView(subtitle: emptySubtitle) { showcase in
+                        send(showcase.prompt)
+                    }
+                    .padding(.vertical, 24)
                 }
-                .transition(.opacity.combined(with: .scale(scale: 0.98)))
+                .scrollBounceBehavior(.basedOnSize)
+                .defaultScrollAnchor(.center)
+                .transition(.opacity)
             }
         }
         .animation(.easeInOut(duration: 0.25), value: showsEmptyState)
@@ -102,7 +107,7 @@ struct ConversationView: View {
                         following = true
                         withAnimation(.smooth(duration: 0.4)) { position.scrollTo(edge: .bottom) }
                     }
-                    .transition(.opacity.combined(with: .scale(scale: 0.8)).combined(with: .offset(y: 8)))
+                    .transition(Motion.insertion(.opacity.combined(with: .scale(scale: 0.8)).combined(with: .offset(y: 8)), reduced: reduceMotion))
                 }
                 Composer(
                     draft: $draft,
@@ -114,23 +119,24 @@ struct ConversationView: View {
                     onStop: { chat.stop() }
                 )
             }
+            .frame(maxWidth: 720)
             .padding(.horizontal, 14)
             .padding(.bottom, 8)
-            .animation(.spring(duration: 0.35, bounce: 0.3), value: !following && !isAtBottom)
+            .animation(Motion.spring(0.35, bounce: 0.3, reduced: reduceMotion), value: !following && !isAtBottom)
         }
         .onChange(of: chat.messages.last?.id) { _, id in
             guard let id, var current = flight, current.id == id, !current.landed else { return }
             current.landed = true
-            withAnimation(.spring(duration: 0.55, bounce: 0.22)) { flight = current }
+            withAnimation(.spring(duration: 0.5, bounce: 0.22)) { flight = current }
             Task {
-                try? await Task.sleep(for: .milliseconds(700))
+                try? await Task.sleep(for: .milliseconds(450))
                 if flight?.id == id { flight = nil }
             }
         }
     }
 
     @ViewBuilder
-    private func row(for message: UIMessage, turnID: String) -> some View {
+    private func row(for message: UIMessage, turnID: String, isLast: Bool) -> some View {
         if message.role == .user {
             UserBubble(message: message, namespace: namespace)
         } else {
@@ -138,7 +144,7 @@ struct ConversationView: View {
                 message: message,
                 name: assistantName,
                 turnID: turnID,
-                isLast: message.id == visibleMessages.last?.id,
+                isLast: isLast,
                 status: chat.status,
                 isBusy: chat.isBusy,
                 namespace: namespace,
@@ -150,14 +156,19 @@ struct ConversationView: View {
         }
     }
 
-    private func turnID(before index: Int) -> String {
-        visibleMessages[..<index].last { $0.role == .user }?.id ?? "start"
+    private func turnIDs(for messages: [UIMessage]) -> [String] {
+        var current = "start"
+        return messages.map { message in
+            defer { if message.role == .user { current = message.id } }
+            return current
+        }
     }
 
     private func send(_ text: String) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, !chat.isBusy else { return }
         let message = UIMessage(id: ChatID.generate(), role: .user, parts: [.text(trimmed)])
+        flight = nil
         if !reduceMotion {
             flight = Flight(id: message.id, text: trimmed)
         }
@@ -171,11 +182,13 @@ private struct JumpToLatestButton: View {
     var isStreaming: Bool
     var action: () -> Void
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
         Button(action: action) {
             HStack(spacing: 6) {
                 Image(systemName: "arrow.down")
-                    .symbolEffect(.bounce.down, options: .repeat(.periodic(delay: 1.4)), isActive: isStreaming)
+                    .symbolEffect(.bounce.down, options: .repeat(.periodic(delay: 1.4)), isActive: isStreaming && !reduceMotion)
                 Text(isStreaming ? "Jump to reply" : "Latest")
             }
             .font(.footnote.weight(.semibold))

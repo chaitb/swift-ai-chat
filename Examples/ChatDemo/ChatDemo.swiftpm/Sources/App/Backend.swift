@@ -26,13 +26,8 @@ enum Backend: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    var keychainAccount: String? {
-        switch self {
-        case .anthropic: "anthropic-api-key"
-        case .openAI: "openai-api-key"
-        case .demo, .aiSDK: nil
-        }
-    }
+    static let anthropicAccount = "anthropic-api-key"
+    static let openAIAccount = "openai-api-key"
 }
 
 struct BackendSettings: Equatable, Sendable {
@@ -48,18 +43,18 @@ struct BackendSettings: Equatable, Sendable {
         let defaults = UserDefaults.standard
         return BackendSettings(
             backend: defaults.string(forKey: backendKey).flatMap(Backend.init(rawValue:)) ?? .demo,
-            anthropicKey: Keychain.read(Backend.anthropic.keychainAccount ?? "") ?? "",
-            openAIKey: Keychain.read(Backend.openAI.keychainAccount ?? "") ?? "",
+            anthropicKey: Keychain.read(Backend.anthropicAccount) ?? "",
+            openAIKey: Keychain.read(Backend.openAIAccount) ?? "",
             endpoint: defaults.string(forKey: endpointKey) ?? ""
         )
     }
 
-    func save() {
+    func save(replacing previous: BackendSettings) {
         let defaults = UserDefaults.standard
         defaults.set(backend.rawValue, forKey: Self.backendKey)
         defaults.set(endpoint, forKey: Self.endpointKey)
-        Keychain.write(anthropicKey, for: Backend.anthropic.keychainAccount ?? "")
-        Keychain.write(openAIKey, for: Backend.openAI.keychainAccount ?? "")
+        if anthropicKey != previous.anthropicKey { Keychain.write(anthropicKey, for: Backend.anthropicAccount) }
+        if openAIKey != previous.openAIKey { Keychain.write(openAIKey, for: Backend.openAIAccount) }
     }
 
     var endpointURL: URL? {
