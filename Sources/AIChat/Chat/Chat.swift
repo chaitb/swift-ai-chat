@@ -37,8 +37,17 @@ public final class Chat: Identifiable {
 
     @ObservationIgnored private var activeTask: Task<RequestOutcome, Never>?
     @ObservationIgnored private var activeState: StreamingMessageState?
-    @ObservationIgnored private var resumableState: StreamingMessageState?
+    @ObservationIgnored private var resumableState: StreamingMessageState? {
+        didSet { if resumableState == nil { resumableAnnouncedID = nil } }
+    }
+    @ObservationIgnored private var resumableAnnouncedID: String?
     @ObservationIgnored private var lastWrittenMessageID: String?
+    @ObservationIgnored private var continuedMessageID: String?
+    @ObservationIgnored private var announcedMessageID: String?
+    @ObservationIgnored private var activeConnection: Task<Void, any Error>?
+    @ObservationIgnored private var reconnectRequested = false
+    @ObservationIgnored private var answeredSinceLastRequest = false
+    @ObservationIgnored private var reportedToolOutputs: Set<String> = []
     private var toolTasks: [String: Task<Void, Never>] = [:]
     @ObservationIgnored private var automaticSends = 0
     @ObservationIgnored private var saveTask: Task<Void, Never>?
@@ -169,6 +178,20 @@ public final class Chat: Identifiable {
         await run(trigger: .resume, messageID: nil, options: options, automatic: false)
     }
 
+    /// Drops the connection of the running response and recovers the response with
+    /// ``ChatTransport/reconnectToStream(_:)``, keeping the status and what already streamed.
+    ///
+    /// Call it when the app returns to the foreground after its connection may have
+    /// gone stale in the background. It makes at least one attempt, without waiting,
+    /// then follows ``ChatConfiguration/resumePolicy``. With a transport that can't
+    /// reconnect, the response ends with a disconnect error. Does nothing when no
+    /// response is streaming.
+    public func reconnect() {
+        guard let activeConnection else { return }
+        reconnectRequested = true
+        activeConnection.cancel()
+    }
+
     /// Stops the running response and any client tools it started. Streamed parts are kept.
     public func stop() {
         activeTask?.cancel()
@@ -196,6 +219,8 @@ public final class Chat: Identifiable {
         messages = []
         error = nil
         resumableState = nil
+        answeredSinceLastRequest = false
+        reportedToolOutputs = []
         status = .ready
         save()
     }
@@ -211,6 +236,7 @@ public final class Chat: Identifiable {
             part.output = output
             part.errorText = nil
         }
+        recordAnswer(callID: toolCallId, in: messageID)
         await sendAutomaticallyIfNeeded(continuing: messageID, options: options)
     }
 
@@ -222,6 +248,7 @@ public final class Chat: Identifiable {
             part.output = nil
             part.errorText = errorText
         }
+        recordAnswer(callID: toolCallId, in: messageID)
         await sendAutomaticallyIfNeeded(continuing: messageID, options: options)
     }
 
@@ -240,6 +267,7 @@ public final class Chat: Identifiable {
             part.approval = approval
             part.state = localTool != nil && !approved ? .outputDenied : .approvalResponded
         }
+        recordAnswer(callID: part.toolCallId, in: messageID)
         if let localTool, approved, let execute = localTool.execute {
             let call = ToolCall(toolCallId: part.toolCallId, toolName: part.toolName, input: part.input ?? .null, dynamic: part.isDynamic)
             let task = Task { @MainActor [weak self] in
@@ -303,7 +331,7 @@ public final class Chat: Identifiable {
 
         if trigger == .resume {
             do {
-                guard let stream = try await transport.reconnectToStream(reconnectRequest(merged)) else {
+                guard let stream = try await transport.reconnectToStream(reconnectRequest(merged, messageID: resumeMessageID())) else {
                     resumableState = nil
                     return outcome
                 }
@@ -321,8 +349,13 @@ public final class Chat: Identifiable {
         setStatus(.submitted)
         error = nil
         lastWrittenMessageID = nil
+        continuedMessageID = nil
+        announcedMessageID = nil
         activeState = makeState(trigger: trigger, messageID: messageID)
-        if trigger != .resume { resumableState = nil }
+        if trigger != .resume {
+            resumableState = nil
+            answeredSinceLastRequest = false
+        }
 
         var failure: ChatError?
         do {
@@ -347,8 +380,11 @@ public final class Chat: Identifiable {
             failure = ChatError.from(error, operation: "chat.stream")
         }
 
-        if let disconnect = failure, disconnect.isDisconnect, !Task.isCancelled, configuration.resumePolicy.attempts > 0 {
-            failure = await recover(from: disconnect, options: merged)
+        if let disconnect = failure, disconnect.isDisconnect, !Task.isCancelled {
+            let requested = disconnect.code == Self.reconnectRequestedCode
+            if requested || configuration.resumePolicy.attempts > 0 {
+                failure = await recover(from: disconnect, options: merged, immediately: requested)
+            }
         }
 
         flushPublish()
@@ -363,6 +399,7 @@ public final class Chat: Identifiable {
         } else if let failure {
             outcome.isError = true
             resumableState = failure.isDisconnect ? activeState : nil
+            resumableAnnouncedID = failure.isDisconnect ? announcedMessageID : nil
             fail(failure)
         } else {
             resumableState = nil
@@ -380,6 +417,8 @@ public final class Chat: Identifiable {
         }
         activeState = nil
         lastWrittenMessageID = nil
+        continuedMessageID = nil
+        announcedMessageID = nil
         save()
         return outcome
     }
@@ -395,9 +434,11 @@ public final class Chat: Identifiable {
             if !transport.resumeStreamIsReplay, var state = resumableState {
                 state.resumeBehavior = behavior
                 lastWrittenMessageID = state.message.id
+                announcedMessageID = resumableAnnouncedID
                 return state
             }
             if let last = messages.last, last.role == .assistant, last.toolParts.contains(where: { Self.awaitsServer($0) }) {
+                announcedMessageID = last.id
                 return StreamingMessageState(continuing: last, strict: strict, resumeBehavior: behavior)
             }
             return StreamingMessageState(messageID: configuration.generateID(), strict: strict, resumeBehavior: behavior)
@@ -407,7 +448,9 @@ public final class Chat: Identifiable {
             let response = messageID.flatMap { id in messages.last { $0.id == id } } ?? messages.last
             if let response, response.role == .assistant {
                 lastWrittenMessageID = response.id
-                return StreamingMessageState(continuing: response, strict: strict)
+                continuedMessageID = response.id
+                announcedMessageID = response.id
+                return StreamingMessageState(continuing: response, strict: strict, resumeBehavior: .init(resetsOnMessageIDChange: true))
             }
             return StreamingMessageState(messageID: configuration.generateID(), strict: strict)
         }
@@ -421,18 +464,22 @@ public final class Chat: Identifiable {
         }
     }
 
-    private func recover(from disconnect: ChatError, options: ChatRequestOptions) async -> ChatError? {
+    private func recover(from disconnect: ChatError, options: ChatRequestOptions, immediately: Bool) async -> ChatError? {
+        flushPublish()
         var lastFailure = disconnect
         var delay = configuration.resumePolicy.initialDelay
-        for _ in 0..<configuration.resumePolicy.attempts {
-            do {
-                try await Task.sleep(for: delay)
-            } catch {
-                return .cancelled
+        let attempts = immediately ? max(1, configuration.resumePolicy.attempts) : configuration.resumePolicy.attempts
+        for attempt in 0..<attempts {
+            if attempt > 0 || !immediately {
+                do {
+                    try await Task.sleep(for: delay)
+                } catch {
+                    return .cancelled
+                }
+                delay *= 2
             }
-            delay *= 2
             do {
-                guard let resumed = try await transport.reconnectToStream(reconnectRequest(options)) else { return lastFailure }
+                guard let resumed = try await transport.reconnectToStream(reconnectRequest(options, messageID: announcedMessageID)) else { return lastFailure }
                 if var state = activeState {
                     if transport.resumeStreamIsReplay {
                         state = StreamingMessageState(
@@ -456,31 +503,78 @@ public final class Chat: Identifiable {
         return lastFailure
     }
 
+    private static let reconnectRequestedCode = "reconnect_requested"
+
+    /// Reads `stream` into the active message on a task of its own, so ``reconnect()``
+    /// can drop the connection without ending the response.
     private func consume(_ stream: UIMessageChunkStream) async throws {
-        for try await chunk in stream {
-            if Task.isCancelled { break }
-            guard var state = activeState else { break }
-            let update = try state.apply(chunk)
-            activeState = state
-            if update.messageChanged {
-                publish(updatesStatus: update.updatesStatus)
+        reconnectRequested = false
+        let connection = Task { @MainActor [self] in
+            for try await chunk in stream {
+                if Task.isCancelled { break }
+                try await apply(chunk)
             }
-            if let data = update.data {
-                configuration.onData?(data)
-            }
-            if let streamError = update.streamError {
-                throw ChatError(kind: .stream, message: streamError, operation: "chat.stream")
-            }
-            if let toolCall = update.toolCall {
-                flushPublish()
-                await handleToolCall(toolCall)
-            }
+            try Task.checkCancellation()
         }
-        try Task.checkCancellation()
+        activeConnection = connection
+        defer { activeConnection = nil }
+        do {
+            try await withTaskCancellationHandler {
+                try await connection.value
+            } onCancel: {
+                connection.cancel()
+            }
+        } catch {
+            guard reconnectRequested, !Task.isCancelled else { throw error }
+            reconnectRequested = false
+            throw ChatError(
+                kind: .network,
+                message: "The connection was closed to reconnect.",
+                code: Self.reconnectRequestedCode,
+                operation: "chat.reconnect"
+            )
+        }
     }
 
-    private func reconnectRequest(_ options: ChatRequestOptions) -> ChatReconnectRequest {
-        ChatReconnectRequest(chatID: id, messages: messages, headers: options.headers, body: options.body, metadata: options.metadata)
+    private func apply(_ chunk: UIMessageChunk) async throws {
+        guard var state = activeState else { return }
+        let update = try state.apply(chunk)
+        activeState = state
+        if case .start(let messageID?, _) = chunk {
+            announcedMessageID = messageID
+        }
+        if let continued = continuedMessageID {
+            continuedMessageID = nil
+            if state.message.id != continued { lastWrittenMessageID = nil }
+        }
+        if update.messageChanged {
+            publish(updatesStatus: update.updatesStatus)
+        }
+        if let data = update.data {
+            configuration.onData?(data)
+        }
+        if let part = update.toolOutput, reportedToolOutputs.insert(part.toolCallId).inserted {
+            configuration.onToolOutput?(part)
+        }
+        if let streamError = update.streamError {
+            throw ChatError(kind: .stream, message: streamError, operation: "chat.stream")
+        }
+        if let toolCall = update.toolCall {
+            flushPublish()
+            await handleToolCall(toolCall)
+        }
+    }
+
+    private func reconnectRequest(_ options: ChatRequestOptions, messageID: String?) -> ChatReconnectRequest {
+        ChatReconnectRequest(chatID: id, messageID: messageID, messages: messages, headers: options.headers, body: options.body, metadata: options.metadata)
+    }
+
+    /// The response ``resumeStream(options:)`` picks up: the one a disconnect cut off,
+    /// or the last assistant message while it still waits for the server.
+    private func resumeMessageID() -> String? {
+        if resumableState != nil { return resumableAnnouncedID }
+        guard let last = messages.last, last.role == .assistant, last.toolParts.contains(where: { Self.awaitsServer($0) }) else { return nil }
+        return last.id
     }
 
     private func mergedOptions(_ options: ChatRequestOptions) -> ChatRequestOptions {
@@ -607,7 +701,15 @@ public final class Chat: Identifiable {
     }
 
     private func shouldSendAutomatically() -> Bool {
-        configuration.effectiveAutoSendPolicy.shouldSend(messages)
+        answeredSinceLastRequest && configuration.effectiveAutoSendPolicy.shouldSend(messages)
+    }
+
+    /// Notes that the app answered a tool call the server hasn't seen yet, so the
+    /// auto-send policy may send it, and replays don't report it as a tool output.
+    private func recordAnswer(callID: String, in messageID: String?) {
+        guard messageID != nil else { return }
+        answeredSinceLastRequest = true
+        reportedToolOutputs.insert(callID)
     }
 
     private func sendAutomaticallyIfNeeded(continuing messageID: String?, options: ChatRequestOptions) async {

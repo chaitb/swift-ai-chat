@@ -409,6 +409,231 @@ struct ChatTests {
         #expect(chat.messages.map(\.text) == ["First", "Long", "Second", "Short"])
         #expect(chat.status == .ready)
     }
+
+    // MARK: - Continuations that start a new message
+
+    @Test func aContinuationTheServerNamesAsANewMessageIsAddedAfterTheLastReply() async throws {
+        let earlier = UIMessage.assistant("Earlier reply", id: "a1")
+        let transport = MockChatTransport(responses: [.chunks(.textResponse("New reply", messageId: "a2"))])
+        let chat = Chat(messages: [.user("Hi", id: "u1"), earlier], transport: transport)
+        await chat.submit(options: ChatRequestOptions(metadata: ["flow": "workout"]))
+
+        #expect(chat.status == .ready)
+        #expect(chat.messages.map(\.id) == ["u1", "a1", "a2"])
+        #expect(chat.messages[1] == earlier)
+        #expect(chat.messages[2].text == "New reply")
+        #expect(transport.requests.first?.messageID == "a1")
+    }
+
+    @Test func aContinuationWithoutAMessageIDStaysInTheLastReply() async throws {
+        let earlier = UIMessage(id: "a1", role: .assistant, parts: [.stepStart, .text(TextPart(text: "Part one. ", state: .done))])
+        let transport = MockChatTransport(responses: [.chunks(.textResponse("Part two."))])
+        let chat = Chat(messages: [.user("Hi", id: "u1"), earlier], transport: transport)
+        await chat.submit()
+
+        #expect(chat.messages.map(\.id) == ["u1", "a1"])
+        #expect(chat.messages[1].text == "Part one. Part two.")
+    }
+
+    // MARK: - Automatic sends
+
+    @Test func aResponseEndingOnServerToolsDoesNotSendAgain() async throws {
+        let serverTool: [UIMessageChunk] = [
+            .start(messageId: "a1"),
+            .startStep,
+            .toolInputStart(ToolInputStartChunk(toolCallId: "c1", toolName: "foodLog.list")),
+            .toolInputAvailable(ToolInputAvailableChunk(toolCallId: "c1", toolName: "foodLog.list", input: [:])),
+            .toolOutputAvailable(ToolOutputAvailableChunk(toolCallId: "c1", output: ["entries": []])),
+            .finishStep,
+            .finish(finishReason: .toolCalls),
+        ]
+        let transport = MockChatTransport(responses: [.chunks(serverTool), .chunks(.textResponse("Should not be asked for"))])
+        let chat = Chat(transport: transport, configuration: ChatConfiguration(
+            sendAutomaticallyWhen: .any(.lastAssistantMessageIsCompleteWithToolCalls, .lastAssistantMessageIsCompleteWithApprovalResponses)
+        ))
+        await chat.sendMessage("What did I eat?")
+        try await Task.sleep(for: .milliseconds(30))
+
+        #expect(transport.requests.count == 1)
+        #expect(chat.messages.last?.toolPart(callID: "c1")?.state == .outputAvailable)
+    }
+
+    @Test func answeringAClientToolStillSendsAgain() async throws {
+        let transport = MockChatTransport(responses: [
+            .chunks(.toolCallResponse(toolName: "askSurvey", input: ["question": "Goal?"], messageId: "a1")),
+            .chunks([.start(messageId: "a1"), .startStep, .textStart(id: "t"), .textDelta(id: "t", delta: "Got it."), .textEnd(id: "t"), .finishStep, .finish()]),
+        ])
+        let chat = Chat(transport: transport, configuration: ChatConfiguration(sendAutomaticallyWhen: .lastAssistantMessageIsCompleteWithToolCalls))
+        await chat.sendMessage("Help me set a goal")
+        #expect(transport.requests.count == 1)
+
+        await chat.addToolOutput(toolCallId: "call-1", output: ["answer": "Lose fat"])
+        #expect(transport.requests.count == 2)
+        #expect(transport.requests.last?.messages.last?.toolPart(callID: "call-1")?.output == ["answer": "Lose fat"])
+        #expect(chat.messages.last?.text == "Got it.")
+    }
+
+    // MARK: - Tool outputs
+
+    @Test func toolOutputsAreReportedOncePerCall() async throws {
+        let drop = ChatError(kind: .network, message: "Lost")
+        let chunks: [UIMessageChunk] = [
+            .start(messageId: "a1"),
+            .startStep,
+            .toolInputAvailable(ToolInputAvailableChunk(toolCallId: "c1", toolName: "foodLog.add", input: ["food": "Apple"])),
+            .toolOutputAvailable(ToolOutputAvailableChunk(toolCallId: "c1", output: ["status": "saving"], preliminary: true)),
+            .toolOutputAvailable(ToolOutputAvailableChunk(toolCallId: "c1", output: ["status": "saved"])),
+            .toolInputAvailable(ToolInputAvailableChunk(toolCallId: "c2", toolName: "foodLog.delete", input: ["id": "x"])),
+            .toolOutputError(ToolOutputErrorChunk(toolCallId: "c2", errorText: "Not found")),
+            .finishStep,
+            .startStep,
+            .textStart(id: "t"),
+            .textDelta(id: "t", delta: "Logged"),
+        ]
+        var saved = StreamingMessageState(messageID: "a1")
+        for chunk in chunks { _ = try saved.apply(chunk) }
+        _ = try saved.apply(.textDelta(id: "t", delta: " your apple."))
+        _ = try saved.apply(.textEnd(id: "t"))
+
+        let transport = MockChatTransport(
+            responses: [.chunksThenFailure(chunks, drop)],
+            reconnectResponses: [.chunks(saved.message.replayChunks(finishReason: .stop))],
+            resumeStreamIsReplay: true
+        )
+        var reported: [String] = []
+        let chat = Chat(transport: transport, configuration: ChatConfiguration(
+            onToolOutput: { reported.append("\($0.toolCallId):\($0.state.rawValue)") },
+            resumePolicy: ResumePolicy(attempts: 1, initialDelay: .milliseconds(1))
+        ))
+        await chat.sendMessage("Log an apple")
+
+        #expect(chat.status == .ready)
+        #expect(reported == ["c1:output-available", "c2:output-error"])
+        #expect(chat.messages.last?.text == "Logged your apple.")
+    }
+
+    // MARK: - Reconnecting
+
+    @Test func reconnectDropsTheConnectionAndRecoversTheResponse() async throws {
+        let transport = MockChatTransport(
+            responses: [.chunksThenHang([.start(messageId: "a1"), .startStep, .textStart(id: "t"), .textDelta(id: "t", delta: "Hel")])],
+            reconnectResponses: [.chunks(.textResponse("Hello world", messageId: "a1"))],
+            resumeStreamIsReplay: true
+        )
+        var finishes: [ChatFinishEvent] = []
+        let chat = Chat(transport: transport, configuration: ChatConfiguration(onFinish: { finishes.append($0) }))
+        let task = Task { await chat.sendMessage("Hi") }
+        try await waitUntil { chat.messages.last?.text == "Hel" }
+        chat.reconnect()
+        #expect(chat.status == .streaming)
+        await task.value
+
+        #expect(chat.status == .ready)
+        #expect(chat.error == nil)
+        #expect(chat.messages.map(\.text) == ["Hi", "Hello world"])
+        #expect(transport.reconnectRequests.map(\.messageID) == ["a1"])
+        #expect(transport.reconnectRequests.first?.messages.last?.text == "Hel")
+        #expect(finishes.count == 1)
+        #expect(finishes.first?.isAbort == false)
+        #expect(finishes.first?.isDisconnect == false)
+    }
+
+    @Test func reconnectWithATransportThatCannotResumeEndsInADisconnect() async throws {
+        let transport = MockChatTransport(
+            responses: [.chunksThenHang([.start(messageId: "a1"), .startStep, .textStart(id: "t"), .textDelta(id: "t", delta: "Hel")])],
+            reconnectResponses: [nil]
+        )
+        let chat = Chat(transport: transport)
+        let task = Task { await chat.sendMessage("Hi") }
+        try await waitUntil { chat.messages.last?.text == "Hel" }
+        chat.reconnect()
+        await task.value
+
+        #expect(chat.status == .error)
+        #expect(chat.error?.isDisconnect == true)
+        #expect(chat.messages.last?.text == "Hel")
+    }
+
+    @Test func reconnectDoesNothingWhenIdle() async throws {
+        let transport = MockChatTransport(reconnectResponses: [.chunks(.textResponse("Unexpected"))])
+        let chat = Chat(messages: [.user("Hi")], transport: transport)
+        chat.reconnect()
+        try await Task.sleep(for: .milliseconds(20))
+        #expect(transport.reconnectRequests.isEmpty)
+        #expect(chat.status == .ready)
+    }
+
+    @Test func stopStillAbortsAfterAReconnect() async throws {
+        let transport = MockChatTransport(
+            responses: [.chunksThenHang([.start(messageId: "a1"), .startStep, .textStart(id: "t"), .textDelta(id: "t", delta: "Hel")])],
+            reconnectResponses: [.chunksThenHang([.start(messageId: "a1"), .startStep, .textStart(id: "t"), .textDelta(id: "t", delta: "Hello")])],
+            resumeStreamIsReplay: true
+        )
+        var finish: ChatFinishEvent?
+        let chat = Chat(transport: transport, configuration: ChatConfiguration(onFinish: { finish = $0 }))
+        let task = Task { await chat.sendMessage("Hi") }
+        try await waitUntil { chat.messages.last?.text == "Hel" }
+        chat.reconnect()
+        try await waitUntil { chat.messages.last?.text == "Hello" }
+        chat.stop()
+        await task.value
+
+        #expect(chat.status == .ready)
+        #expect(finish?.isAbort == true)
+        #expect(chat.messages.last?.text == "Hello")
+    }
+
+    @Test func recoveryOnlyNamesAMessageTheServerAnnounced() async throws {
+        let drop = ChatError(kind: .network, message: "Lost")
+        let transport = MockChatTransport(
+            responses: [.failure(drop), .chunksThenFailure([.start(messageId: "a7"), .startStep], drop)],
+            reconnectResponses: [nil, nil]
+        )
+        let chat = Chat(transport: transport, configuration: ChatConfiguration(resumePolicy: ResumePolicy(attempts: 1, initialDelay: .milliseconds(1))))
+        await chat.sendMessage("First")
+        await chat.sendMessage("Second")
+        #expect(transport.reconnectRequests.map(\.messageID) == [nil, "a7"])
+    }
+
+    @Test func resumingAfterADisconnectNamesTheCutOffReply() async throws {
+        let drop = ChatError(kind: .network, message: "Lost")
+        let transport = MockChatTransport(
+            responses: [.chunksThenFailure([.start(messageId: "a1"), .startStep, .textStart(id: "t"), .textDelta(id: "t", delta: "Hel")], drop)],
+            reconnectResponses: [.chunks([.textDelta(id: "t", delta: "lo"), .textEnd(id: "t"), .finishStep, .finish()])]
+        )
+        let chat = Chat(transport: transport)
+        await chat.sendMessage("Hi")
+        #expect(chat.status == .error)
+        await chat.resumeStream()
+        #expect(transport.reconnectRequests.map(\.messageID) == ["a1"])
+        #expect(chat.messages.last?.text == "Hello")
+    }
+
+    @Test func aSavedMessageReplaysIntoTheSameMessage() async throws {
+        let saved = UIMessage(id: "a1", role: .assistant, parts: [
+            .stepStart,
+            .text(TextPart(text: "Here you go.", state: .done)),
+        ], metadata: ["threadId": "t1"])
+        let transport = ReplayTransport(saved: saved)
+        let chat = Chat(messages: [.user("Hi"), UIMessage(id: "a1", role: .assistant, parts: [.stepStart, .text(TextPart(text: "Here", state: .streaming))])], transport: transport)
+        await chat.resumeStream()
+        #expect(chat.messages.count == 2)
+        #expect(chat.messages.last == saved)
+    }
+}
+
+/// Recovers by replaying a saved copy, the way a server without a resume endpoint can.
+private struct ReplayTransport: ChatTransport {
+    let saved: UIMessage
+    var resumeStreamIsReplay: Bool { true }
+
+    func sendMessages(_ request: ChatTransportRequest) async throws -> UIMessageChunkStream {
+        UIMessageChunkStream { $0.finish() }
+    }
+
+    func reconnectToStream(_ request: ChatReconnectRequest) async throws -> UIMessageChunkStream? {
+        UIMessageStream.replaying(saved, finishReason: .stop)
+    }
 }
 
 struct WeatherInput: Codable, Sendable { let city: String }

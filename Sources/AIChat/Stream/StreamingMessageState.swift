@@ -46,6 +46,9 @@ public struct StreamingMessageState: Sendable {
         public var data: DataChunk?
         /// The text of an `error` chunk.
         public var streamError: String?
+        /// A tool call that this chunk finished with an output, an error or a denial.
+        /// Preliminary outputs don't count.
+        public var toolOutput: ToolPart?
 
         public init() {}
     }
@@ -262,6 +265,7 @@ public struct StreamingMessageState: Sendable {
                 toolMetadata: chunk.toolMetadata
             ), existingIndex: existing)
             update.messageChanged = true
+            update.toolOutput = message.toolPart(callID: chunk.toolCallId)
 
         case .toolApprovalRequest(let chunk):
             guard let index = try toolInvocationIndex(callID: chunk.toolCallId) else { break }
@@ -299,6 +303,7 @@ public struct StreamingMessageState: Sendable {
             guard let index = try toolInvocationIndex(callID: toolCallId) else { break }
             mutateTool(at: index) { $0.state = .outputDenied }
             update.messageChanged = true
+            update.toolOutput = message.parts[index].toolPart
 
         case .toolOutputAvailable(let chunk):
             guard let index = try toolInvocationIndex(callID: chunk.toolCallId),
@@ -318,6 +323,9 @@ public struct StreamingMessageState: Sendable {
                 toolMetadata: chunk.toolMetadata ?? invocation.toolMetadata
             ), existingIndex: index)
             update.messageChanged = true
+            if chunk.preliminary != true {
+                update.toolOutput = message.toolPart(callID: chunk.toolCallId)
+            }
 
         case .toolOutputError(let chunk):
             guard let index = try toolInvocationIndex(callID: chunk.toolCallId),
@@ -337,6 +345,7 @@ public struct StreamingMessageState: Sendable {
                 toolMetadata: chunk.toolMetadata ?? invocation.toolMetadata
             ), existingIndex: index)
             update.messageChanged = true
+            update.toolOutput = message.toolPart(callID: chunk.toolCallId)
 
         case .startStep:
             message.parts.append(.stepStart)
