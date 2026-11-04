@@ -73,6 +73,20 @@ public enum UIMessageStream {
         return try UIMessageChunk(jsonObject: object)
     }
 
+    /// A stream that rebuilds `message` from its first chunk, for a transport that
+    /// recovers a response from a saved copy instead of a live stream.
+    ///
+    /// Return it from ``ChatTransport/reconnectToStream(_:)`` with
+    /// ``ChatTransport/resumeStreamIsReplay`` set, so ``Chat`` replaces what streamed
+    /// before the cut with the saved message.
+    public static func replaying(_ message: UIMessage, finishReason: FinishReason? = nil) -> UIMessageChunkStream {
+        let chunks = message.replayChunks(finishReason: finishReason)
+        return UIMessageChunkStream { continuation in
+            for chunk in chunks { continuation.yield(chunk) }
+            continuation.finish()
+        }
+    }
+
     /// Parses a `text/event-stream` body of UI message chunks.
     ///
     /// Keep-alive comments are skipped and the stream ends at `[DONE]` or when the body ends.

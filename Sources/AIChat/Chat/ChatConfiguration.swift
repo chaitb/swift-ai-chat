@@ -32,6 +32,10 @@ public struct ChatFinishEvent: Sendable {
 
 /// Decides whether ``Chat`` sends the conversation again on its own, after tool
 /// results or approval responses complete the last assistant message.
+///
+/// The policy is only asked once the app has answered something since the last
+/// request: a tool output, a tool error or an approval response. A response that
+/// ends on tool calls the server already ran never sends again by itself.
 public struct AutoSendPolicy: Sendable {
     public let shouldSend: @MainActor @Sendable ([UIMessage]) -> Bool
 
@@ -58,6 +62,8 @@ public struct AutoSendPolicy: Sendable {
 }
 
 /// How ``Chat`` recovers a response whose connection dropped.
+///
+/// ``Chat/reconnect()`` uses it too, and always makes at least one attempt.
 public struct ResumePolicy: Sendable {
     /// How many times to call ``ChatTransport/reconnectToStream(_:)`` after a disconnect.
     public var attempts: Int
@@ -82,7 +88,13 @@ public struct ChatConfiguration: Sendable {
     /// The most automatic follow-up requests in a row, to stop runaway tool loops.
     public var maxAutomaticSends: Int
     /// Called for every tool call the client should answer, after the part is shown.
+    /// A recovery that replays the response doesn't announce a call again.
     public var onToolCall: (@MainActor @Sendable (ToolCall) async -> Void)?
+    /// Called once for every tool call that a response finishes with an output, an error
+    /// or a denial, for example to refresh data a server tool changed. Answers the app
+    /// gives itself, with ``Chat/addToolOutput(toolCallId:output:options:)`` or by denying
+    /// a registered tool, aren't reported.
+    public var onToolOutput: (@MainActor @Sendable (ToolPart) -> Void)?
     public var onFinish: (@MainActor @Sendable (ChatFinishEvent) -> Void)?
     public var onError: (@MainActor @Sendable (ChatError) -> Void)?
     /// Called for every `data-*` chunk, including transient ones that never join a message.
@@ -104,6 +116,7 @@ public struct ChatConfiguration: Sendable {
         sendAutomaticallyWhen: AutoSendPolicy? = nil,
         maxAutomaticSends: Int = 20,
         onToolCall: (@MainActor @Sendable (ToolCall) async -> Void)? = nil,
+        onToolOutput: (@MainActor @Sendable (ToolPart) -> Void)? = nil,
         onFinish: (@MainActor @Sendable (ChatFinishEvent) -> Void)? = nil,
         onError: (@MainActor @Sendable (ChatError) -> Void)? = nil,
         onData: (@MainActor @Sendable (DataChunk) -> Void)? = nil,
@@ -118,6 +131,7 @@ public struct ChatConfiguration: Sendable {
         self.sendAutomaticallyWhen = sendAutomaticallyWhen
         self.maxAutomaticSends = maxAutomaticSends
         self.onToolCall = onToolCall
+        self.onToolOutput = onToolOutput
         self.onFinish = onFinish
         self.onError = onError
         self.onData = onData

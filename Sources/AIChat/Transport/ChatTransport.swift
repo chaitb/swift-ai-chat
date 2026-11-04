@@ -81,7 +81,12 @@ public struct ChatTransportRequest: Sendable {
 /// Everything a transport needs to reconnect to a streaming response.
 public struct ChatReconnectRequest: Sendable {
     public var chatID: String
-    /// The conversation as the client has it, for transports that recover by other means.
+    /// The assistant message whose response was cut off, when there is one. A transport
+    /// that recovers from saved messages instead of a live stream looks for this id,
+    /// then returns ``UIMessageStream/replaying(_:finishReason:)`` with
+    /// ``ChatTransport/resumeStreamIsReplay`` set.
+    public var messageID: String?
+    /// The conversation as the client has it, including what streamed before the cut.
     public var messages: [UIMessage]
     public var headers: [String: String]
     public var body: [String: JSONValue]
@@ -89,12 +94,14 @@ public struct ChatReconnectRequest: Sendable {
 
     public init(
         chatID: String,
+        messageID: String? = nil,
         messages: [UIMessage] = [],
         headers: [String: String] = [:],
         body: [String: JSONValue] = [:],
         metadata: JSONValue? = nil
     ) {
         self.chatID = chatID
+        self.messageID = messageID
         self.messages = messages
         self.headers = headers
         self.body = body

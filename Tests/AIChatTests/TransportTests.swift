@@ -65,6 +65,27 @@ struct TransportTests {
         #expect(error.isRetryable)
     }
 
+    @Test func aiSDKTransportReadsRetryHintsFromTheErrorBody() async throws {
+        let http = StubHTTPClient([
+            .json(["success": false, "error": "Coach is busy", "failure": ["retryable": false, "code": "busy", "requestId": "req-9"]], statusCode: 503),
+            .json(["success": false, "error": "Try again", "failure": ["retryable": true]], statusCode: 400),
+            .json(["error": ["message": "Overloaded", "type": "overloaded_error"]], statusCode: 529),
+        ])
+        let chat = Chat(transport: AISDKChatTransport(api: api, httpClient: http))
+        await chat.sendMessage("Hi")
+        #expect(chat.error?.message == "Coach is busy")
+        #expect(chat.error?.code == "busy")
+        #expect(chat.error?.requestID == "req-9")
+        #expect(chat.error?.isRetryable == false)
+
+        await chat.sendMessage("Again")
+        #expect(chat.error?.isRetryable == true)
+
+        await chat.sendMessage("Once more")
+        #expect(chat.error?.code == "overloaded_error")
+        #expect(chat.error?.isRetryable == true)
+    }
+
     @Test func aiSDKTransportRejectsInvalidChunks() async throws {
         let http = StubHTTPClient([.eventStream("data: {not json}\n\n")])
         let chat = Chat(transport: AISDKChatTransport(api: api, httpClient: http))

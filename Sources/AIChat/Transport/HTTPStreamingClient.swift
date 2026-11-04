@@ -103,13 +103,15 @@ extension HTTPStreamResponse {
         let message = parsed?.message
             ?? Self.genericErrorMessage(in: data)
             ?? (trimmed.isEmpty ? "The server responded with status \(statusCode)." : String(trimmed.prefix(1_000)))
+        let json = try? JSONValue(parsing: data)
         return ChatError(
             kind: .http,
             message: message,
-            code: parsed?.code ?? Self.genericErrorCode(in: data),
+            code: parsed?.code ?? Self.genericErrorCode(in: json),
             statusCode: statusCode,
-            requestID: header("x-request-id") ?? header("request-id") ?? header("cf-ray"),
+            requestID: header("x-request-id") ?? header("request-id") ?? Self.genericRequestID(in: json) ?? header("cf-ray"),
             retryAfter: retryAfter,
+            isRetryable: Self.genericRetryable(in: json),
             responseBody: bodyText.isEmpty ? nil : bodyText,
             operation: operation
         )
@@ -137,11 +139,26 @@ extension HTTPStreamResponse {
         return nil
     }
 
-    private static func genericErrorCode(in data: Data) -> String? {
-        guard let value = try? JSONValue(parsing: data) else { return nil }
+    private static func genericErrorCode(in value: JSONValue?) -> String? {
+        guard let value else { return nil }
         return value["error"]?["code"]?.stringValue
             ?? value["error"]?["type"]?.stringValue
             ?? value["failure"]?["code"]?.stringValue
             ?? value["code"]?.stringValue
+    }
+
+    /// A `retryable` flag the server put in the body, which wins over the status code.
+    private static func genericRetryable(in value: JSONValue?) -> Bool? {
+        guard let value else { return nil }
+        return value["failure"]?["retryable"]?.boolValue
+            ?? value["error"]?["retryable"]?.boolValue
+            ?? value["retryable"]?.boolValue
+    }
+
+    private static func genericRequestID(in value: JSONValue?) -> String? {
+        guard let value else { return nil }
+        return value["failure"]?["requestId"]?.stringValue
+            ?? value["error"]?["requestId"]?.stringValue
+            ?? value["requestId"]?.stringValue
     }
 }

@@ -108,6 +108,16 @@ await chat.addToolApprovalResponse(approvalID: approval.id, approved: true)
 
 Tools without an `execute` closure are answered by your UI through `onToolCall` and `addToolOutput(toolCallId:output:)`, like a survey or a confirmation sheet. Approvals the server asks for (AI SDK `needsApproval` tools) use the same call.
 
+`sendAutomaticallyWhen` decides when those answers go back to the server. It's only asked after the app answered something, so a response that ends on tools the server already ran doesn't send again.
+
+`onToolOutput` reports each tool call a response finishes, once, as soon as its output, error or denial arrives. Use it to refresh data a server tool changed while the reply keeps streaming:
+
+```swift
+ChatConfiguration(onToolOutput: { part in
+    if part.toolName.hasPrefix("foodLog.") { diary.refresh() }
+})
+```
+
 ## Picking a model
 
 `ModelPicker` loads a catalog and remembers the user's choice. Catalogs exist for Anthropic, OpenAI and the Vercel AI Gateway, and `CompositeModelCatalog` merges several.
@@ -145,7 +155,41 @@ let transport = AISDKChatTransport(
 )
 ```
 
-Streams the server marks resumable reconnect with `resumeStream()`, or on their own with a `ResumePolicy`.
+Streams the server marks resumable reconnect with `resumeStream()`, or on their own with a `ResumePolicy`. When the app comes back from the background, `reconnect()` drops a connection that may have gone stale and recovers the response without leaving the streaming state.
+
+A server without a resume endpoint can still recover a dropped reply if it finishes and saves the reply after the client disconnects. Read the saved copy in `reconnectToStream` and replay it:
+
+```swift
+struct SavedReplyTransport: ChatTransport {
+    let base: AISDKChatTransport
+    let api: MyAPI
+
+    var resumeStreamIsReplay: Bool { true }
+
+    func sendMessages(_ request: ChatTransportRequest) async throws -> UIMessageChunkStream {
+        try await base.sendMessages(request)
+    }
+
+    func reconnectToStream(_ request: ChatReconnectRequest) async throws -> UIMessageChunkStream? {
+        guard let replyID = request.messageID else { return nil }
+        for attempt in 0..<30 {
+            if attempt > 0 { try await Task.sleep(for: .seconds(min(attempt, 5))) }
+            if let saved = try await api.savedMessage(id: replyID), saved.isFinished {
+                return UIMessageStream.replaying(saved)
+            }
+        }
+        return nil
+    }
+}
+```
+
+`messageID` is the id the server gave the reply in its `start` chunk, so it's `nil` when the connection dropped before the server named it.
+
+A replay doesn't announce a tool call again: `onToolCall` and a tool's `execute` run once per call, and an approval or output the app already gave stays on the message.
+
+When a request continues an assistant message, for example after a tool result or when a flow starts a conversation with `submit(options:)`, and the server's `start` chunk names a different message, the response becomes a new message after it instead of merging into it.
+
+`sendAutomaticallyWhen` only looks at the last message. When the user answers a tool call in an earlier message, continue that message yourself with `submit(continuing: messageID)`. The request's `messageID` names it, so the transport can send that message.
 
 ## Saving conversations
 
@@ -157,7 +201,7 @@ let chat = try await Chat.restore(id: savedID, transport: transport, configurati
 
 ## Errors
 
-Every failure surfaces as a `ChatError` with a kind, the provider's error code, the HTTP status, the request id and whether a retry may help. Text that streamed before an error stays in the message.
+Every failure surfaces as a `ChatError` with a kind, the provider's error code, the HTTP status, the request id and whether a retry may help. A `retryable` flag in the error body wins over the status code. Text that streamed before an error stays in the message.
 
 ## Example
 
