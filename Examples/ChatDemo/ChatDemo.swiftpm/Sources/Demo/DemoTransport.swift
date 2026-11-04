@@ -3,7 +3,7 @@ import Foundation
 
 struct DemoTransport: ChatTransport {
     func sendMessages(_ request: ChatTransportRequest) async throws -> UIMessageChunkStream {
-        let beats = DemoScript.beats(for: request.messages)
+        let beats = DemoScript.beats(for: request.messages, continuing: request.messageID)
         return AsyncThrowingStream { continuation in
             let task = Task {
                 do {

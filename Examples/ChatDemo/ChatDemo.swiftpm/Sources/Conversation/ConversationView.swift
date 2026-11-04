@@ -149,11 +149,17 @@ struct ConversationView: View {
                 isBusy: chat.isBusy,
                 namespace: namespace,
                 respond: { approvalID, approved in
-                    following = true
-                    Task { await chat.addToolApprovalResponse(approvalID: approvalID, approved: approved) }
+                    if isLast { following = true }
+                    Task { await answer(approvalID: approvalID, approved: approved, in: message.id) }
                 }
             )
         }
+    }
+
+    private func answer(approvalID: String, approved: Bool, in messageID: String) async {
+        await chat.addToolApprovalResponse(approvalID: approvalID, approved: approved)
+        guard chat.messages.last?.id != messageID, !chat.status.isBusy else { return }
+        await chat.submit(continuing: messageID)
     }
 
     private func turnIDs(for messages: [UIMessage]) -> [String] {

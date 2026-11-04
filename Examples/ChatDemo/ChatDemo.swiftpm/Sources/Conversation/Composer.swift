@@ -17,6 +17,7 @@ struct Composer: View {
 
     @State private var sends = 0
     @ScaledMetric(relativeTo: .body) private var fieldHeight: CGFloat = 50
+    @ScaledMetric(relativeTo: .body) private var iconSize: CGFloat = 17
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var canSend: Bool {
@@ -42,11 +43,11 @@ struct Composer: View {
                     }
                 }
                 .frame(minHeight: fieldHeight)
-                .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 25, style: .continuous))
+                .glassEffect(.regular.interactive(), in: .rect(cornerRadius: fieldHeight / 2, style: .continuous))
 
                 Button(action: primaryAction) {
                     Image(systemName: isBusy ? "stop.fill" : "arrow.up")
-                        .font(.system(size: 17, weight: .bold))
+                        .font(.system(size: iconSize, weight: .bold))
                         .contentTransition(.symbolEffect(.replace.magic(fallback: .downUp)))
                         .foregroundStyle(isBusy || canSend ? AnyShapeStyle(.white) : AnyShapeStyle(.tertiary))
                         .frame(width: fieldHeight, height: fieldHeight)

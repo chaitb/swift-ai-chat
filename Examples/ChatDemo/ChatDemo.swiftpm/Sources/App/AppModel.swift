@@ -89,10 +89,11 @@ final class AppModel {
     }
 
     func apply(_ newSettings: BackendSettings) async {
+        guard !isSwitching else { return }
         newSettings.save(replacing: settings)
         let changed = newSettings != settings
         settings = newSettings
-        guard changed, !isSwitching else { return }
+        guard changed else { return }
         isSwitching = true
         defer { isSwitching = false }
         picker = Self.makePicker(for: newSettings)

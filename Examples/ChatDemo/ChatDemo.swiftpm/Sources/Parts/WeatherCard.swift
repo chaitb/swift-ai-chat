@@ -98,8 +98,8 @@ struct WeatherCard: View {
 
     private func sky(_ report: WeatherReport?) -> LinearGradient {
         let rainy = report?.condition.lowercased().contains("rain") == true
-        let top: Color = rainy ? Color(red: 0.36, green: 0.45, blue: 0.56) : Color(red: 0.25, green: 0.55, blue: 0.92)
-        let bottom: Color = rainy ? Color(red: 0.22, green: 0.29, blue: 0.38) : Color(red: 0.42, green: 0.71, blue: 0.98)
+        let top: Color = rainy ? Color(red: 0.36, green: 0.45, blue: 0.56) : Color(red: 0.15, green: 0.45, blue: 0.84)
+        let bottom: Color = rainy ? Color(red: 0.22, green: 0.29, blue: 0.38) : Color(red: 0.10, green: 0.36, blue: 0.74)
         let dim = colorScheme == .dark ? 0.78 : 1
         return LinearGradient(colors: [top.opacity(dim), bottom.opacity(dim)], startPoint: .top, endPoint: .bottom)
     }

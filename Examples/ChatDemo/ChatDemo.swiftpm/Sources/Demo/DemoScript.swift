@@ -2,13 +2,16 @@ import AIChat
 import Foundation
 
 enum DemoScript {
-    static func beats(for messages: [UIMessage]) -> [DemoBeat] {
+    static func beats(for messages: [UIMessage], continuing messageID: String? = nil) -> [DemoBeat] {
+        if let messageID, let target = messages.last(where: { $0.id == messageID }), target.role == .assistant {
+            return continuation(after: target)
+        }
         guard let last = messages.last else { return reply(intro) }
         if last.role == .assistant {
             return continuation(after: last)
         }
         switch Showcase.match(last.text) {
-        case .weather: return weather(city: city(in: last.text) ?? "Lisbon")
+        case .weather: return weather(city: city(in: last.text)?.capitalized ?? "Lisbon")
         case .reasoning: return reasoning
         case .approval: return booking
         case .sources: return sources
@@ -21,9 +24,9 @@ enum DemoScript {
         let tools = message.lastStepParts.compactMap(\.toolPart)
         if let weather = tools.last(where: { $0.toolName == DemoTools.weatherName }) {
             guard weather.state == .outputAvailable, let report = try? weather.decodeOutput(WeatherReport.self) else {
-                return reply("I couldn't reach the weather service. Try again in a moment.", start: false)
+                return reply("I couldn't reach the weather service. Try again in a moment.")
             }
-            return reply(weatherSummary(report), start: false, latency: 250...500)
+            return reply(weatherSummary(report), latency: 250...500)
         }
         if let booking = tools.last(where: { $0.toolName == DemoTools.bookingName && $0.state == .approvalResponded }) {
             if booking.approval?.approved == true {
@@ -49,10 +52,10 @@ enum DemoScript {
                 .chunk(.finish(finishReason: .stop)),
             ]
         }
-        return reply("Done.", start: false)
+        return reply("Done.")
     }
 
-    private static func reply(_ text: String, start: Bool = true, latency: ClosedRange<Int> = 450...900) -> [DemoBeat] {
+    private static func reply(_ text: String, latency: ClosedRange<Int> = 450...900) -> [DemoBeat] {
         [
             .chunk(.start()),
             .wait(latency),
@@ -132,7 +135,7 @@ enum DemoScript {
     }
 
     private static func city(in text: String) -> String? {
-        guard let match = text.firstMatch(of: /(?:in|for|at)\s+([A-Z][\p{L}]+(?:\s+[A-Z][\p{L}]+)?)/) else { return nil }
+        guard let match = text.firstMatch(of: /\b(?i:in|for|at)\s+(\p{L}+(?:\s+\p{Lu}\p{L}+)?)/) else { return nil }
         return String(match.1)
     }
 

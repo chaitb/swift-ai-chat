@@ -104,15 +104,16 @@ enum MarkdownBlock: Hashable, Sendable {
             if !bullets.isEmpty || !numbered.isEmpty || !quote.isEmpty { flush() }
             paragraph.append(String(line.drop { $0 == " " || $0 == "\t" }))
         }
-        if let open = code {
+        if var open = code {
             flush()
+            if open.lines.last?.isEmpty == true { open.lines.removeLast() }
             blocks.append(.code(language: open.language, code: open.lines.joined(separator: "\n"), closed: false))
         }
         flush()
         return blocks
     }
 
-    static func inline(_ text: String) -> AttributedString {
+    static func inline(_ text: String, citationOffset: CGFloat = 6) -> AttributedString {
         let options = AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace, failurePolicy: .returnPartiallyParsedIfPossible)
         var attributed = (try? AttributedString(markdown: text, options: options)) ?? AttributedString(text)
         for run in attributed.runs {
@@ -132,7 +133,7 @@ enum MarkdownBlock: Hashable, Sendable {
             var marker = AttributedString(String(match.1))
             marker.font = .caption2.weight(.bold)
             marker.foregroundColor = Color.accentColor
-            marker.baselineOffset = 6
+            marker.baselineOffset = citationOffset
             attributed.replaceSubrange(lower..<upper, with: marker)
         }
         return attributed

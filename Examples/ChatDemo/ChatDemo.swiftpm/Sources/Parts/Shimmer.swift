@@ -27,6 +27,7 @@ struct Shimmer: ViewModifier {
                                 }
                             }
                     }
+                    .accessibilityHidden(true)
                 }
         } else if isActive {
             content

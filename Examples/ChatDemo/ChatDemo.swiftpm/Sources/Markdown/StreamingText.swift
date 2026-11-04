@@ -140,6 +140,7 @@ struct StreamingText: View {
         TimelineView(FrameSchedule(end: settleEnd)) { timeline in
             composed(segments, caret: caret)
                 .textRenderer(StreamRenderer(now: timeline.date.timeIntervalSinceReferenceDate, reduceMotion: reduceMotion))
+                .accessibilityLabel(Text(content))
         }
     }
 

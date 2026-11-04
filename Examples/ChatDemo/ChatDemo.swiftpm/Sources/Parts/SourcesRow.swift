@@ -31,6 +31,8 @@ private struct SourceChip: View {
     var index: Int
     var source: SourceURLPart
 
+    @ScaledMetric(relativeTo: .caption2) private var badgeSize: CGFloat = 18
+
     private var host: String {
         URL(string: source.url)?.host()?.replacingOccurrences(of: "www.", with: "") ?? source.url
     }
@@ -49,7 +51,7 @@ private struct SourceChip: View {
                 Text("\(index)")
                     .font(.caption2.weight(.bold))
                     .foregroundStyle(.white)
-                    .frame(width: 18, height: 18)
+                    .frame(width: badgeSize, height: badgeSize)
                     .background(.tint, in: .circle)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(source.title ?? host)

@@ -4,6 +4,8 @@ struct MarkdownView: View {
     var text: String
     var isStreaming: Bool
 
+    @ScaledMetric(relativeTo: .body) private var citationOffset: CGFloat = 6
+
     var body: some View {
         let blocks = MarkdownBlock.parse(text)
         VStack(alignment: .leading, spacing: 12) {
@@ -20,11 +22,11 @@ struct MarkdownView: View {
         let streaming = isStreaming && isLast
         switch block {
         case .heading(let level, let text):
-            StreamingText(content: MarkdownBlock.inline(text), isStreaming: streaming, showsCaret: streaming)
+            StreamingText(content: MarkdownBlock.inline(text, citationOffset: citationOffset), isStreaming: streaming, showsCaret: streaming)
                 .font(level == 1 ? .title2.bold() : level == 2 ? .title3.bold() : .headline)
                 .padding(.top, level <= 2 ? 6 : 2)
         case .paragraph(let text):
-            StreamingText(content: MarkdownBlock.inline(text), isStreaming: streaming, showsCaret: streaming)
+            StreamingText(content: MarkdownBlock.inline(text, citationOffset: citationOffset), isStreaming: streaming, showsCaret: streaming)
         case .bullets(let items):
             VStack(alignment: .leading, spacing: 6) {
                 ForEach(items.indices, id: \.self) { index in
@@ -33,7 +35,7 @@ struct MarkdownView: View {
                             .fill(.tint)
                             .frame(width: 5, height: 5)
                             .alignmentGuide(.firstTextBaseline) { $0[.bottom] + 1 }
-                        StreamingText(content: MarkdownBlock.inline(items[index]), isStreaming: streaming && index == items.count - 1, showsCaret: streaming && index == items.count - 1)
+                        StreamingText(content: MarkdownBlock.inline(items[index], citationOffset: citationOffset), isStreaming: streaming && index == items.count - 1, showsCaret: streaming && index == items.count - 1)
                     }
                     .transition(.opacity.combined(with: .offset(y: 4)))
                 }
@@ -47,13 +49,13 @@ struct MarkdownView: View {
                             .monospacedDigit()
                             .foregroundStyle(.secondary)
                             .frame(minWidth: 18, alignment: .trailing)
-                        StreamingText(content: MarkdownBlock.inline(items[index].1), isStreaming: streaming && index == items.count - 1, showsCaret: streaming && index == items.count - 1)
+                        StreamingText(content: MarkdownBlock.inline(items[index].1, citationOffset: citationOffset), isStreaming: streaming && index == items.count - 1, showsCaret: streaming && index == items.count - 1)
                     }
                     .transition(.opacity.combined(with: .offset(y: 4)))
                 }
             }
         case .quote(let text):
-            StreamingText(content: MarkdownBlock.inline(text), isStreaming: streaming, showsCaret: streaming)
+            StreamingText(content: MarkdownBlock.inline(text, citationOffset: citationOffset), isStreaming: streaming, showsCaret: streaming)
                 .foregroundStyle(.secondary)
                 .italic()
                 .padding(.leading, 14)
