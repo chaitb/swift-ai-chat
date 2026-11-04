@@ -185,6 +185,8 @@ struct SavedReplyTransport: ChatTransport {
 
 `messageID` is the id the server gave the reply in its `start` chunk, so it's `nil` when the connection dropped before the server named it.
 
+A replay doesn't announce a tool call again: `onToolCall` and a tool's `execute` run once per call, and an approval or output the app already gave stays on the message.
+
 When a request continues an assistant message, for example after a tool result or when a flow starts a conversation with `submit(options:)`, and the server's `start` chunk names a different message, the response becomes a new message after it instead of merging into it.
 
 ## Saving conversations

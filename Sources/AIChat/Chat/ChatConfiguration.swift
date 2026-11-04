@@ -88,10 +88,12 @@ public struct ChatConfiguration: Sendable {
     /// The most automatic follow-up requests in a row, to stop runaway tool loops.
     public var maxAutomaticSends: Int
     /// Called for every tool call the client should answer, after the part is shown.
+    /// A recovery that replays the response doesn't announce a call again.
     public var onToolCall: (@MainActor @Sendable (ToolCall) async -> Void)?
     /// Called once for every tool call that a response finishes with an output, an error
-    /// or a denial, for example to refresh data a server tool changed. Outputs the app
-    /// adds with ``Chat/addToolOutput(toolCallId:output:options:)`` aren't reported.
+    /// or a denial, for example to refresh data a server tool changed. Answers the app
+    /// gives itself, with ``Chat/addToolOutput(toolCallId:output:options:)`` or by denying
+    /// a registered tool, aren't reported.
     public var onToolOutput: (@MainActor @Sendable (ToolPart) -> Void)?
     public var onFinish: (@MainActor @Sendable (ChatFinishEvent) -> Void)?
     public var onError: (@MainActor @Sendable (ChatError) -> Void)?

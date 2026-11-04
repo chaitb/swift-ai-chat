@@ -609,6 +609,154 @@ struct ChatTests {
         #expect(chat.messages.last?.text == "Hello")
     }
 
+    @Test func anApprovedServerToolStillReportsItsOutput() async throws {
+        let request: [UIMessageChunk] = [
+            .start(messageId: "a1"), .startStep,
+            .toolInputAvailable(ToolInputAvailableChunk(toolCallId: "c1", toolName: "user.foodLog.deleteItem", input: ["log_item_id": "x"])),
+            .toolApprovalRequest(ToolApprovalRequestChunk(approvalId: "ap-1", toolCallId: "c1")),
+            .finishStep, .finish(finishReason: .toolCalls),
+        ]
+        let continuation: [UIMessageChunk] = [
+            .start(messageId: "a1"),
+            .toolOutputAvailable(ToolOutputAvailableChunk(toolCallId: "c1", output: ["ok": true])),
+            .startStep, .textStart(id: "t"), .textDelta(id: "t", delta: "Removed."), .textEnd(id: "t"), .finishStep, .finish(),
+        ]
+        let transport = MockChatTransport(responses: [.chunks(request), .chunks(continuation)])
+        var reported: [String] = []
+        let chat = Chat(transport: transport, configuration: ChatConfiguration(
+            sendAutomaticallyWhen: .lastAssistantMessageIsCompleteWithApprovalResponses,
+            onToolOutput: { reported.append($0.toolCallId) }
+        ))
+        await chat.sendMessage("Remove the yogurt")
+        await chat.addToolApprovalResponse(approvalID: "ap-1", approved: true)
+        #expect(chat.messages.last?.toolParts.first?.state == .outputAvailable)
+        #expect(reported == ["c1"])
+    }
+
+    @Test func aReplayDoesNotAnnounceAClientToolAgain() async throws {
+        let drop = ChatError(kind: .network, message: "Lost")
+        let chunks: [UIMessageChunk] = [
+            .start(messageId: "a1"), .startStep,
+            .toolInputAvailable(ToolInputAvailableChunk(toolCallId: "s1", toolName: "askSurvey", input: ["q": "Goal?"])),
+            .finishStep,
+        ]
+        var saved = StreamingMessageState(messageID: "a1")
+        for chunk in chunks { _ = try saved.apply(chunk) }
+        let transport = MockChatTransport(
+            responses: [.chunksThenFailure(chunks, drop)],
+            reconnectResponses: [.chunks(saved.message.replayChunks(finishReason: .toolCalls))],
+            resumeStreamIsReplay: true
+        )
+        var calls: [String] = []
+        let chat = Chat(transport: transport, configuration: ChatConfiguration(
+            onToolCall: { calls.append($0.toolCallId) },
+            resumePolicy: ResumePolicy(attempts: 1, initialDelay: .milliseconds(1))
+        ))
+        await chat.sendMessage("Help")
+        #expect(chat.status == .ready)
+        #expect(calls == ["s1"])
+        #expect(chat.messages.last?.toolPart(callID: "s1")?.state == .inputAvailable)
+    }
+
+    @Test func aReplayKeepsWhatALocalToolAlreadyAnswered() async throws {
+        let drop = ChatError(kind: .network, message: "Lost")
+        let call: [UIMessageChunk] = [
+            .start(messageId: "a1"), .startStep,
+            .toolInputAvailable(ToolInputAvailableChunk(toolCallId: "w1", toolName: "getWeather", input: ["city": "Paris"])),
+            .finishStep,
+        ]
+        var saved = StreamingMessageState(messageID: "a1")
+        for chunk in call { _ = try saved.apply(chunk) }
+        let transport = MockChatTransport(
+            responses: [
+                .chunksThenFailure(call, drop),
+                .chunks([.start(messageId: "a1"), .startStep, .textStart(id: "t"), .textDelta(id: "t", delta: "21°C."), .textEnd(id: "t"), .finishStep, .finish()]),
+            ],
+            reconnectResponses: [.chunks(saved.message.replayChunks(finishReason: .toolCalls), delay: .milliseconds(20))],
+            resumeStreamIsReplay: true
+        )
+        let runs = Counter()
+        let weather = ChatTool(name: "getWeather") { _ in
+            _ = runs.next()
+            return ["celsius": 21]
+        }
+        let chat = Chat(transport: transport, configuration: ChatConfiguration(
+            tools: [weather],
+            resumePolicy: ResumePolicy(attempts: 1, initialDelay: .milliseconds(1))
+        ))
+        await chat.sendMessage("Weather in Paris?")
+        try await waitUntil { transport.requests.count == 2 && chat.status == .ready && !chat.isBusy }
+
+        #expect(runs.value == 1)
+        #expect(transport.requests.last?.messages.last?.toolPart(callID: "w1")?.output == ["celsius": 21])
+        #expect(chat.messages.last?.text == "21°C.")
+    }
+
+    @Test func aReplayKeepsTheApprovalALocalToolAskedFor() async throws {
+        let call: [UIMessageChunk] = [
+            .start(messageId: "a1"), .startStep,
+            .toolInputAvailable(ToolInputAvailableChunk(toolCallId: "d1", toolName: "deleteNote", input: ["id": "n1"])),
+            .finishStep,
+        ]
+        var saved = StreamingMessageState(messageID: "a1")
+        for chunk in call { _ = try saved.apply(chunk) }
+        let transport = MockChatTransport(
+            responses: [.chunksThenHang(call), .chunks(.textResponse("Deleted.", messageId: "a1"))],
+            reconnectResponses: [.chunks(saved.message.replayChunks(finishReason: .toolCalls))],
+            resumeStreamIsReplay: true
+        )
+        let runs = Counter()
+        let deleteNote = ChatTool(name: "deleteNote", needsApproval: true) { _ in
+            _ = runs.next()
+            return ["deleted": true]
+        }
+        let chat = Chat(transport: transport, configuration: ChatConfiguration(tools: [deleteNote]))
+        let task = Task { await chat.sendMessage("Delete my note") }
+        try await waitUntil { chat.messages.last?.toolPart(callID: "d1")?.state == .approvalRequested }
+        let approvalID = try #require(chat.messages.last?.toolPart(callID: "d1")?.approval?.id)
+        chat.reconnect()
+        await task.value
+        #expect(transport.reconnectRequests.count == 1)
+        #expect(chat.messages.last?.toolPart(callID: "d1")?.state == .approvalRequested)
+        #expect(chat.messages.last?.toolPart(callID: "d1")?.approval?.id == approvalID)
+
+        await chat.addToolApprovalResponse(approvalID: approvalID, approved: true)
+        try await waitUntil { transport.requests.count == 2 && chat.status == .ready }
+        #expect(runs.value == 1)
+        #expect(chat.messages.last?.text == "Deleted.")
+    }
+
+    @Test func reconnectingDuringTheLastRecoveryAttemptStillRecovers() async throws {
+        let transport = MockChatTransport(
+            responses: [.chunksThenHang([.start(messageId: "a1"), .startStep, .textStart(id: "t"), .textDelta(id: "t", delta: "Hel")])],
+            reconnectResponses: [
+                .chunksThenHang([.start(messageId: "a1"), .startStep, .textStart(id: "t"), .textDelta(id: "t", delta: "Hell")]),
+                .chunks(.textResponse("Hello world", messageId: "a1")),
+            ],
+            resumeStreamIsReplay: true
+        )
+        let chat = Chat(transport: transport, configuration: ChatConfiguration(resumePolicy: ResumePolicy(attempts: 1, initialDelay: .zero)))
+        let task = Task { await chat.sendMessage("Hi") }
+        try await waitUntil { chat.messages.last?.text == "Hel" }
+        chat.reconnect()
+        try await waitUntil { chat.messages.last?.text == "Hell" }
+        chat.reconnect()
+        await task.value
+        #expect(chat.error == nil)
+        #expect(chat.messages.last?.text == "Hello world")
+    }
+
+    @Test func chunksBeforeTheStartDoNotDecideWhereANewMessageGoes() async throws {
+        let earlier = UIMessage.assistant("Earlier reply", id: "a1")
+        let transport = MockChatTransport(responses: [.chunks(
+            [.data(DataChunk(name: "status", data: "thinking", transient: true))] + .textResponse("New reply", messageId: "a2")
+        )])
+        let chat = Chat(messages: [.user("Hi", id: "u1"), earlier], transport: transport)
+        await chat.submit()
+        #expect(chat.messages.map(\.id) == ["u1", "a1", "a2"])
+        #expect(chat.messages[1] == earlier)
+    }
+
     @Test func aSavedMessageReplaysIntoTheSameMessage() async throws {
         let saved = UIMessage(id: "a1", role: .assistant, parts: [
             .stepStart,

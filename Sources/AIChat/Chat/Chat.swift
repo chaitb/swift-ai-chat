@@ -48,6 +48,8 @@ public final class Chat: Identifiable {
     @ObservationIgnored private var reconnectRequested = false
     @ObservationIgnored private var answeredSinceLastRequest = false
     @ObservationIgnored private var reportedToolOutputs: Set<String> = []
+    @ObservationIgnored private var handledToolCalls: Set<String> = []
+    @ObservationIgnored private var clientToolParts: [String: ToolPart] = [:]
     private var toolTasks: [String: Task<Void, Never>] = [:]
     @ObservationIgnored private var automaticSends = 0
     @ObservationIgnored private var saveTask: Task<Void, Never>?
@@ -123,6 +125,7 @@ public final class Chat: Identifiable {
     /// Appends `message` and streams the response.
     public func sendMessage(_ message: UIMessage, options: ChatRequestOptions = ChatRequestOptions()) async {
         await cancelActiveRequest()
+        forgetToolCalls()
         messages.append(message)
         save()
         await run(trigger: .submit, messageID: nil, options: options, automatic: false)
@@ -152,6 +155,7 @@ public final class Chat: Identifiable {
             fail(ChatError(kind: .configuration, message: "Message \(messageID) is not a user message.", operation: "chat.editMessage"))
             return
         }
+        forgetToolCalls()
         messages = Array(messages[...index])
         messages[index] = UIMessage(id: messageID, role: .user, parts: Self.parts(text: text, files: files), metadata: metadata)
         save()
@@ -166,6 +170,7 @@ public final class Chat: Identifiable {
             fail(ChatError(kind: .configuration, message: "Message \(messageID ?? "") was not found.", operation: "chat.regenerate"))
             return
         }
+        forgetToolCalls()
         messages = Array(messages[..<(messages[index].role == .assistant ? index : index + 1)])
         await run(trigger: .regenerate, messageID: messageID, options: options, automatic: false)
     }
@@ -183,9 +188,9 @@ public final class Chat: Identifiable {
     ///
     /// Call it when the app returns to the foreground after its connection may have
     /// gone stale in the background. It makes at least one attempt, without waiting,
-    /// then follows ``ChatConfiguration/resumePolicy``. With a transport that can't
-    /// reconnect, the response ends with a disconnect error. Does nothing when no
-    /// response is streaming.
+    /// then follows ``ChatConfiguration/resumePolicy``. Calling it again while that
+    /// attempt reads adds another one. With a transport that can't reconnect, the
+    /// response ends with a disconnect error. Does nothing when no response is streaming.
     public func reconnect() {
         guard let activeConnection else { return }
         reconnectRequested = true
@@ -220,7 +225,7 @@ public final class Chat: Identifiable {
         error = nil
         resumableState = nil
         answeredSinceLastRequest = false
-        reportedToolOutputs = []
+        forgetToolCalls()
         status = .ready
         save()
     }
@@ -231,24 +236,22 @@ public final class Chat: Identifiable {
     /// conversation is sent again according to ``ChatConfiguration/sendAutomaticallyWhen``.
     public func addToolOutput(toolCallId: String, output: JSONValue, options: ChatRequestOptions = ChatRequestOptions()) async {
         toolTasks[toolCallId] = nil
-        let messageID = updateToolPart(callID: toolCallId) { part in
+        let messageID = answerToolPart(callID: toolCallId) { part in
             part.state = .outputAvailable
             part.output = output
             part.errorText = nil
         }
-        recordAnswer(callID: toolCallId, in: messageID)
         await sendAutomaticallyIfNeeded(continuing: messageID, options: options)
     }
 
     /// Records that a client-side tool call failed.
     public func addToolOutput(toolCallId: String, errorText: String, options: ChatRequestOptions = ChatRequestOptions()) async {
         toolTasks[toolCallId] = nil
-        let messageID = updateToolPart(callID: toolCallId) { part in
+        let messageID = answerToolPart(callID: toolCallId) { part in
             part.state = .outputError
             part.output = nil
             part.errorText = errorText
         }
-        recordAnswer(callID: toolCallId, in: messageID)
         await sendAutomaticallyIfNeeded(continuing: messageID, options: options)
     }
 
@@ -260,14 +263,13 @@ public final class Chat: Identifiable {
     public func addToolApprovalResponse(approvalID: String, approved: Bool, reason: String? = nil, options: ChatRequestOptions = ChatRequestOptions()) async {
         guard let part = messages.reversed().lazy.flatMap(\.toolParts).first(where: { $0.approval?.id == approvalID }) else { return }
         let localTool = configuration.tool(named: part.toolName).flatMap { $0.needsApproval ? $0 : nil }
-        let messageID = updateToolPart(callID: part.toolCallId) { part in
+        let messageID = answerToolPart(callID: part.toolCallId) { part in
             var approval = part.approval ?? ToolApproval(id: approvalID)
             approval.approved = approved
             approval.reason = reason
             part.approval = approval
             part.state = localTool != nil && !approved ? .outputDenied : .approvalResponded
         }
-        recordAnswer(callID: part.toolCallId, in: messageID)
         if let localTool, approved, let execute = localTool.execute {
             let call = ToolCall(toolCallId: part.toolCallId, toolName: part.toolName, input: part.input ?? .null, dynamic: part.isDynamic)
             let task = Task { @MainActor [weak self] in
@@ -468,9 +470,11 @@ public final class Chat: Identifiable {
         flushPublish()
         var lastFailure = disconnect
         var delay = configuration.resumePolicy.initialDelay
-        let attempts = immediately ? max(1, configuration.resumePolicy.attempts) : configuration.resumePolicy.attempts
-        for attempt in 0..<attempts {
-            if attempt > 0 || !immediately {
+        var attemptsLeft = immediately ? max(1, configuration.resumePolicy.attempts) : configuration.resumePolicy.attempts
+        var waits = !immediately
+        while attemptsLeft > 0 {
+            attemptsLeft -= 1
+            if waits {
                 do {
                     try await Task.sleep(for: delay)
                 } catch {
@@ -478,6 +482,7 @@ public final class Chat: Identifiable {
                 }
                 delay *= 2
             }
+            waits = true
             do {
                 guard let resumed = try await transport.reconnectToStream(reconnectRequest(options, messageID: announcedMessageID)) else { return lastFailure }
                 if var state = activeState {
@@ -498,6 +503,10 @@ public final class Chat: Identifiable {
                 let failure = ChatError.from(error, operation: "chat.resume")
                 guard failure.isDisconnect else { return failure }
                 lastFailure = failure
+                if failure.code == Self.reconnectRequestedCode {
+                    attemptsLeft = max(attemptsLeft, 1)
+                    waits = false
+                }
             }
         }
         return lastFailure
@@ -543,7 +552,7 @@ public final class Chat: Identifiable {
         if case .start(let messageID?, _) = chunk {
             announcedMessageID = messageID
         }
-        if let continued = continuedMessageID {
+        if let continued = continuedMessageID, case .start = chunk {
             continuedMessageID = nil
             if state.message.id != continued { lastWrittenMessageID = nil }
         }
@@ -561,7 +570,11 @@ public final class Chat: Identifiable {
         }
         if let toolCall = update.toolCall {
             flushPublish()
-            await handleToolCall(toolCall)
+            if handledToolCalls.insert(toolCall.toolCallId).inserted {
+                await handleToolCall(toolCall)
+            } else {
+                restoreClientToolPart(callID: toolCall.toolCallId)
+            }
         }
     }
 
@@ -649,10 +662,13 @@ public final class Chat: Identifiable {
         if let tool = configuration.tool(named: call.toolName) {
             if tool.needsApproval {
                 let approvalID = configuration.generateID()
+                var requested: ToolPart?
                 updateToolPart(callID: call.toolCallId) { part in
                     part.state = .approvalRequested
                     part.approval = ToolApproval(id: approvalID)
+                    requested = part
                 }
+                clientToolParts[call.toolCallId] = requested
             } else if let execute = tool.execute {
                 toolTasks[call.toolCallId] = Task { @MainActor [weak self] in
                     await self?.runTool(call, execute: execute, options: ChatRequestOptions())
@@ -704,12 +720,49 @@ public final class Chat: Identifiable {
         answeredSinceLastRequest && configuration.effectiveAutoSendPolicy.shouldSend(messages)
     }
 
-    /// Notes that the app answered a tool call the server hasn't seen yet, so the
-    /// auto-send policy may send it, and replays don't report it as a tool output.
-    private func recordAnswer(callID: String, in messageID: String?) {
-        guard messageID != nil else { return }
+    /// Updates a tool call with the app's answer (an output, an error or an approval
+    /// response) and returns its message's id.
+    ///
+    /// The answer lets the auto-send policy send the message, and the answered part is
+    /// kept so a replay that rebuilds the message from the server's copy gets it back.
+    /// An output, an error or a denial the app gave itself is never reported to
+    /// ``ChatConfiguration/onToolOutput``. An approval isn't an output: the server, or
+    /// the local tool it lets run, answers that call later.
+    private func answerToolPart(callID: String, _ body: (inout ToolPart) -> Void) -> String? {
+        var answered: ToolPart?
+        let messageID = updateToolPart(callID: callID) { part in
+            body(&part)
+            answered = part
+        }
+        guard let answered else { return nil }
         answeredSinceLastRequest = true
-        reportedToolOutputs.insert(callID)
+        clientToolParts[callID] = answered
+        switch answered.state {
+        case .outputAvailable, .outputError, .outputDenied:
+            reportedToolOutputs.insert(callID)
+        default:
+            break
+        }
+        return messageID
+    }
+
+    /// Puts the app's side of a tool call back on a replayed message that announced the
+    /// call again: the approval it asked for or gave, or the output it added.
+    private func restoreClientToolPart(callID: String) {
+        guard let saved = clientToolParts[callID] else { return }
+        updateToolPart(callID: callID) { part in
+            part.state = saved.state
+            part.approval = saved.approval
+            part.output = saved.output
+            part.errorText = saved.errorText
+        }
+    }
+
+    /// Forgets the tool calls of earlier turns, which no replay can bring back.
+    private func forgetToolCalls() {
+        reportedToolOutputs = []
+        handledToolCalls = []
+        clientToolParts = [:]
     }
 
     private func sendAutomaticallyIfNeeded(continuing messageID: String?, options: ChatRequestOptions) async {
