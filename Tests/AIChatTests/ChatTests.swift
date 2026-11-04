@@ -781,6 +781,22 @@ struct ChatTests {
         #expect(chat.status == .ready)
     }
 
+    @Test func submitOnlyContinuesAnAssistantMessageItHas() async throws {
+        let reply = UIMessage.assistant("Reply", id: "a1")
+        let transport = MockChatTransport(responses: [.chunks(.textResponse("More"))])
+        let chat = Chat(messages: [.user("Hi", id: "u1"), reply], transport: transport)
+
+        await chat.submit(continuing: "missing")
+        #expect(chat.status == .error)
+        #expect(chat.error?.kind == .configuration)
+        #expect(chat.error?.message == "Message missing was not found.")
+
+        await chat.submit(continuing: "u1")
+        #expect(chat.error?.message == "Message u1 is not an assistant message.")
+        #expect(transport.requests.isEmpty)
+        #expect(chat.messages.last == reply)
+    }
+
     @Test func aSavedMessageReplaysIntoTheSameMessage() async throws {
         let saved = UIMessage(id: "a1", role: .assistant, parts: [
             .stepStart,

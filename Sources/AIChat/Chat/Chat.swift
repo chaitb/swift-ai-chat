@@ -137,9 +137,20 @@ public final class Chat: Identifiable {
     /// The response continues the last message when that's an assistant message. Pass
     /// `messageID` to continue an earlier assistant message instead, for example when the
     /// user answers a tool call in it after the conversation moved on. The request's
-    /// ``ChatTransportRequest/messageID`` names the message being continued.
+    /// ``ChatTransportRequest/messageID`` names the message being continued. A
+    /// `messageID` that names no assistant message fails with a configuration error.
     public func submit(continuing messageID: String? = nil, options: ChatRequestOptions = ChatRequestOptions()) async {
         await cancelActiveRequest()
+        if let messageID {
+            guard let message = messages.last(where: { $0.id == messageID }) else {
+                fail(ChatError(kind: .configuration, message: "Message \(messageID) was not found.", operation: "chat.submit"))
+                return
+            }
+            guard message.role == .assistant else {
+                fail(ChatError(kind: .configuration, message: "Message \(messageID) is not an assistant message.", operation: "chat.submit"))
+                return
+            }
+        }
         await run(trigger: .submit, messageID: messageID ?? messages.last?.id, options: options, automatic: false)
     }
 
